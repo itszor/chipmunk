@@ -1,0 +1,299 @@
+\chapter{Introduction}
+
+\section{Background}
+
+My research is in the field of dynamic optimisation. This document is an overview of my project, and a description of where it fits in to the wider context of research in the area.
+
+\section{Compilers and optimisers}
+
+Before compilers, programmers worked with machine code directly. This was a difficult and error-prone task, particularly once program code becomes more complicated. Early experimental work by Grace Hopper on \mbox{A--O} and Alick Glennie on Autocode was followed by FORTRAN0. Designed by a team at IBM led by John Backus between 1954 and 1957, this was claimed to produce code as efficient as handcrafted machine code, whilst allowing programmers to write in a high level `English-like' language (FORTRAN~I), rather than getting bogged down in the details of individual processor instructions.
+
+When we speak of an optimisation in terms of compilation, we usually mean a code transformation which will reduce the running time of a given piece of code without affecting what it does when executed (its meaning, or semantics). Optimisation usually happens in various distinct places during the compilation of high-level program code down to low-level machine code.
+
+Even the earliest work on FORTRAN delivered impressive capabilities in terms of optimisation of binary code. If it had not, nobody would have used it because at that time computers were so slow and computer time was so expensive that it was imperative that code should run as fast as possible.
+
+In the intervening time static compilation techniques have advanced a long way, but have been eclipsed by developments in hardware: CPU power has increased exponentially, whereas advanced compilation techniques have delivered as little as a four-fold increase in computing power according to one estimate [Proebsting].
+
+
+\section{Dynamic Optimisation}
+
+
+\subsection{What is dynamic optimisation?}
+
+Traditional compiler optimisations attempt to improve the object code produced from a high-level source program using a variety of methods -- by altering the structure of code, removing redundancy, exploiting particular machine features, and so on. These optimisations typically take place on various forms of code within the compiler: on the source program directly (eg, loop transformations), on some intermediate representation, or on (or near to) the binary code itself (eg, peephole optimisation).
+
+Dynamic optimisation (in the work which has been done in the area to date) typically operates directly on binary object code, guided
+by statistical data gathered from program execution. A feedback loop is created, whereby profile data is used to create more a more efficient version of the code by an additional software layer (the \emph{dynamic optimiser}), which is then transparently spliced back into the running program.
+
+There are several ways in which dynamic optimisation might enable higher performance for executed code than traditional optimisations which take place at compile-time.
+
+Firstly, the code can be optimised in such a way as to take full advantage
+of the available functional units, memory cache heirarchy, etc. of the machine
+which it is actually run on. There is typically a wide range of machines which run a given type of object code, often with wildly different characteristics. Ways around this problem on a typical architecture include distributing programs as source code only and letting system administrators or end-users compile programs for their particular machine (eg, highly-tuned numerical libraries), building binaries with run-time dispatch for sections with critical performance needs [Intel C++ compiler], distributing multiple versions of every binary or making do with the lowest common denominator of CPU features. Unfortunately the last case is by far the most common.
+
+Secondly, program behaviour can be monitored continuously, as its
+behaviour changes due to the data it is working on at the present time. This monitoring should, for example, enable code to be reordered so sections of commonly-executed complex control flow are linearised, or certain routines are specialised using run-time constants. Such optimisation of \emph{phased behaviour} is not possible using any traditional compiler technique, including profile-directed feedback.
+
+Thirdly, certain constructs can be simplified at run time in a way
+which is impossible, impractical or inefficient at compile-time. This
+includes calls to functions in shared libraries, which can be rewritten
+to point directly to the code (or even inlined completely, for small
+functions), and indirect function calls (eg, virtual method invocations in
+object-oriented code), which can be speculatively turned into direct function calls, which typically execute faster.
+
+
+\subsection{Dynamic vs profile-driven optimisation}
+
+There has been much focus recently on profile-driven optimisation
+techniques. In fact, certain new processor designs are practically
+dependent on such techniques to achieve their best performance (eg,
+Intel's IA-64 \cite{Hazelwood}), due to their reliance on static
+instruction scheduling, rather than the dynamic instruction scheduling
+which has become commonplace in superscalar designs.
+
+There are two main problems with the profile-driven approach. The
+first is that a program must be run with a set of `typical' data at
+compile time, and such data is not always available, or the program
+will be run on such diverse data that it is not possible to pinpoint
+a particular data set to optimise on. The second problem is more pragmatic,
+in that it is difficult to persuade developers to develop and ship
+code using profile-driven compilation, since it adds another two (potentially
+time-consuming) stages to the build process. Moreover, problems with
+compilers in the past have led to much commercial software being shipped
+with optimisations turned off altogether, though this is probably a rare occurrence now.
+
+Dynamic optimisation solves each of these problems. In the latter
+case, developers do not need to perform extra profile-gathering and
+optimisation passes. In the former case, since code can adapt to whatever
+data it is running on at the time, there is no need to create contrived
+`typical' data sets. Even data which changes in character as a program
+is running can be handled, as the program may adapt to those changes.
+
+
+\subsection{Secondary benefits}
+
+Dynamic optimisation has several secondary benefits along with the primary benefit of running user code more efficiently. We will assume a particular run-time model for our dynamic optimisation system in this section, see the next chapter for further details and clarification.
+
+\subsubsection{Code mobility}
+
+Dynamic optimisation enables better mobility of code between different processors in a family. It is obvious that it is very difficult to ever \emph{remove} a feature from a processor once it is added, hence cruft tends to build up over time, particularly for very long-lived architectures like IA32.
+
+It is less obvious that it is also difficult to successfully \emph{add} features to new processors in a family (and them to be useful), because vendors always have to contend with an installed base of users who won't be able to run software if the new feature is used. Sometimes emulation can be used on older hardware (a MMX emulator exists for IA32 Linux for example), but very often this leads to unacceptably poor performance.
+
+These problems can both be alleviated somewhat by a dynamically-optimising software layer, in similar ways. If a crufty feature is removed (presumably because it is not very useful, and not very often used -- an example might be the decimal arithmetic instructions of IA32), it can be patched as a combination of other instructions by the software layer of the new chip. If a new feature is added, the software layer can be retroactively modified to patch a combination of instructions suitable for the older processor. With care and maybe after further optimisation passes, both situations should resolve to executing code which is better than, or at least the same as, that which would have been produced by a custom compilation for each chip variant.
+
+
+\subsubsection{Poor-quality code and JIT compilers}
+
+Sometimes it isn't possible to create the highest-quality object code for every program which is written. This might be because the program is written in a less-popular language which doesn't have a particularly good compiler (but has other benefits, such as speed of code development or immunity to certain classes of bugs), or because, as in the case of Java, code must be translated very quickly from some other representation (bytecode) just before it is executed.
+
+This type of code is particularly likely to contain inefficiencies such as redundant memory accesses and calculations, so will benefit very greatly from dynamic optimisation. If JIT-compiled Java is now reaching or exceeding the speed of C++ as some studies claim, it is because JIT compilers are using the same kind of techniques we describe here. With hardware and software support, these benefits can be bought to a larger base of code, written in any language.
+
+
+\section{Existing work}
+
+An amount of work has been done on various related topics, feedback-directed
+optimisation, dynamic optimisation, dynamic recompilation. Some projects
+are briefly dissected below.
+
+
+\subsection{HP Dynamo}
+
+One of the best-documented attempts at dynamic optimisation is Hewlett
+Packard's Dynamo. The outcome of their research was to successfully
+reduce the running time of native HP/UX binaries running on PA-RISC
+powered workstations, despite using an (initially) software emulation-based
+approach.
+
+Originally, the aim of their research was to investigate how feasably
+binary translation can be used to execute non-native program binaries
+at native speeds. For ease of implementation or otherwise, they started
+out with the same architecture (PA-RISC) for their source and target
+codes, and to their surprise native binaries would sometimes actually
+improve in execution speed, sometimes by 20\% or more.
+
+Dynamo executes entirely in user space on unmodified hardware. Much
+like many dynamic recompilation systems, it starts out by always \emph{emulating}
+the code it's running. It profiles code as it runs it, building up
+a \emph{fragment cache} of sections of code which are executed frequently.
+These fragments are `traces' from the original execution of the code
+-- that is, they linearise complicated control flow, turning it into
+straight-line code. This can be handled more efficiently by the CPU's
+prefetch hardware and instruction cache.
+
+The other way Dynamo gains an advantage over statically-optimised
+code is by using its own lightweight optimiser. Since optimisation
+is done at run-time, optimisations themselves must be done very quickly.
+The optimisations attempted include optimisations across procedure
+call/return boundaries and indirect branches or virtual function calls.
+
+Since Dynamo operates on native binaries, if at any point it decides
+that too much time is being spent in re-optimisation, it can ``bail
+out'' and return control to the native processor. This obviously isn't
+possible if non-native binaries are being used.
+
+
+\subsection{Morph}
+
+Harvard University's Morph is a project which attempt to perform optimisation
+({}``morphing'') on annotated binary files between loading and execution.
+The Morph design is based on three requirements. Firstly, optimisation
+should be done on the same machine that the code is to be executed
+on, so that profile data is meaningful. Secondly, no source code should
+be required for the optimisation, as this is not usually shipped with
+commercial software due to its proprietary nature. Thirdly, optimisation
+should be entirely transparent to the end-user.
+
+Morph is comprised of five components -- the Morph back-end, Morph
+Monitor, Morph Editor, Morph Manager, and a tool called Post Morph.
+The Morph back-end is an add-on to SUIF which produces executable
+code along with annotations necessary to perform re-optimisation.
+The Morph Monitor runs constantly as part of the operating system
+to gather profile data. The Morph Editor is a component built into
+the SUIF research compiler that performs optimisations on the intermediate
+representation produced by SUIF and produces an executable. The Morph
+Manager is an off-line system component which makes decisions about
+when to re-optimise programs based on profile data collected by the
+Morph Monitor.
+
+Since optimisation is performed off-line, dynamic usage patterns of
+software cannot be exploited with the Morph system.
+
+
+\subsection{Spike}
+
+Spike \cite{2} is a tool from Digital (Compaq, HP) to optimise programs
+for Alpha/Windows NT\@. Like Morph, profiling is done online and optimisation
+is done offline, on binary code. The Spike system can optimise large
+applications made up from many executables and DLLs, without needing
+source code. According to the spiel, program code is split between
+two varieties, loop-intensive programs and call-intensive programs.
+Traditional compiler technology is geared towards supporting the former
+more strongly, whereas GUI applications typically fall into the second
+camp.
+
+Optimisations performed are code layout, to improve locality and reduce
+the number of instruction cache misses, and hot-cold optimisation
+\cite{CL 96}, which optimises the frequent paths through a procedure
+at the expense of the infrequently executed paths. The latter is claimed
+to be particularly effective in optimising procedures with complex
+control flow and high procedure call overhead.
+
+
+\subsection{Jalapeno}
+
+From IBM Research's web page, Jalapeno is a Java virtual machine with
+the following features:
+
+\begin{itemize}
+\item The entire virtual machine (VM) is implemented in Java
+\item The VM utilises two compilers and no interpreter
+\item A family of parallel, type-exact garbage collectors
+\item A lightweight thread package with compiler-supported preemption
+\item An aggressive optimizing compiler, and
+\item A flexible online adaptive compilation infrastructure
+\end{itemize}
+Probably the most interesting thing about Jalapeno from the point
+of view of this project is the way it optimises frequently-executed
+code more than infrequently-executed code, using statistical sampling
+of the program counter.
+
+
+\subsection{Transmeta Crusoe}
+
+Transmeta's Crusoe%
+\footnote{http://www.transmeta.com/%
+} processor is designed with dynamic code translation in mind. It includes
+hardware support for precise exceptions and speculation in rescheduled
+code (shadow registers), optimization of memory operations (alias
+hardware), and self-modifying code (a ``translated\char`\"{} bit in
+the MMU). And of course it works on non-native binaries, executing
+IA-32 code on a VLIW processor core.
+
+Crusoe's method of operation is otherwise similar to that used by various other binary-translating emulation systems. It starts out emulating code, then for frequently executed sections it does a `rough' translation to its own native (VLIW) code. These translations are cached and further optimised over time the more they are executed. By this method, performance comparable to a modern hardware IA-32 implementation is obtained (in terms of MIPS per Watt).
+
+The limitation of their approach (strictly from our perspective) is their decision to support a legacy architecture for their source code, rather than invent a new architecture explicitly geared towards enabling dynamic optimisation. This makes the problem much harder, and also loses a large amount of data from original source code which would be useful for further optimisation.
+
+\section{Possible optimisations}
+
+A major problem with dynamic optimisation systems is ensuring that any code transformations performed are \emph{safe}. The semantics of individual instructions, whilst seemingly simple, are often actually rather complex once boundary cases are taken into account. Unfortunately many traditional processors were designed with semantics defined only by the previous physical implementation, leading to myriad dark corners and special cases.
+
+It's worth taking a step back and looking at what might be possible
+if we weren't constrained by using an existing architecture, but
+instead designed a new ISA specifically tailored for the demands of
+dynamic optimisation. In particular, we would like code which is exceptionally
+easy to analyse. In addition, we should perhaps retain certain information
+in the instruction stream regarding loops, functions and variable
+liveness which are not normally present in binary images.
+
+As an idea of the kind of thing we'd hope would be possible with such
+an ISA, here are a few sample optimisations which could be performed. See also chapter 5 for a description of how some of these optimisations will actually be performed by our architecture.
+
+\begin{itemize}
+\item Shared-library stub bypassing. This should be an obvious, easy optimisation. Dynamically-linked libraries (DLLs) or shared libraries normally link references to an external object through some sort of jump table, adding an extra level of indirection overhead per function call in the shared library. 
+
+\item Inlining of `hot' functions. Going one step beyond removing a layer of call overhead to a function, the function might actually be inserted directly into the code in the necessary places. There are obviously trade-offs of code expansion versus any speedup gained, except perhaps in the case where very small leaf functions (eg, accessor functions in C++) take up less space than the original function-call sequence, in which case inlining is a no-brainer.
+
+\item Re-optimising around inlined functions:
+
+\begin{itemize}
+
+\item Once we've inlined a function, we can remove any code which, say,
+pushes arguments onto the stack only to pull them off again immediately.
+Any code dealing with stack frames can be removed.
+
+\item Re-running common subexpression elimination, dead code removal. An
+inline function will often perform surplus work which might be unnecessary
+in a particular calling context
+\end{itemize}
+
+\item `Hot cold' optimisation. Given continuously-gathered profile information,
+we can rearrange functions so that all {}``hot'' code executed in
+the common case is made contiguous and highly optimised, moving less-frequently
+executed {}``cold'' code further away where it cannot pollute cache
+lines. \cite{BL 94,CL 96} To a lesser extent, {}``Just-In-Time Code
+Layout'' might be employed \cite{key-1}. Partially-dead code can be removed from the hot path.
+
+\item Partial evaluation. Continuously-gathered data profiling might enable
+specialised versions of functions to be generated, with some or all
+arguments replaced by constants. Run-time constants enable further
+optimisations such as loop unrolling to be performed. \cite{LL 96}
+
+\item Automatic memoization. For slow functions, keep function return values
+in a cache, and use those values instead of recomputing the function%
+\footnote{This requires a function to have no side effects, the determination
+of which may be a stumbling point. Memoization might be the solution
+to a different problem, I'm not sure.%
+} \cite{Michie 68}.
+
+\item Data and code prefetching. Continuously-gathered profile information
+might enable prefetch instructions to pull data from main memory into
+caches in a timely fashion
+
+\item Branch hinting. If a branch is taken 90\% of the time, insert a hint
+to say so and code will be prefetched from the taken address.
+
+\item Instruction scheduling. If execution unit utilisation is low for a
+piece of code, instruction scheduling might be re-run for that code%
+\footnote{This requires a simulation of the new architecture detailed enough
+to take into account multiple issue execution units and cycle accuracy.
+Given constraints on resources available, this may be impossible to
+achieve%
+}. It might be interesting to investigate if using spare bits in the
+instruction encoding to specify which execution unit to use for the
+calculation could be an alternative to either the VLIW approach or
+to performing instruction despatch entirely in hardware.
+
+\item Loop transformations. If nested loops turn out to cause poor cache
+utilisation, they can be transformed into loops with better characteristics.
+The amount of annotation carried over from a high-level source language
+would need to be quite high for this to work
+
+\end{itemize}
+
+Many of these optimisations are difficult or impossible to perform
+at run-time on a normal processor (even with an emulation layer like
+HP Dynamo uses), since there is too little information available in
+most instruction-set architectures to know what is safe to do, and
+when to do it.
+

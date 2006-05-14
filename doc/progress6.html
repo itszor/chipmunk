@@ -1,0 +1,108 @@
+<html>
+<head>
+<title>Progress Report, October 2003</title>
+</head>
+<body>
+
+<center><h1>Progress Report, October 2003</h1></center>
+
+<h3>Information</h3>
+
+<p>I, Julian Brown, am approximately 3 years into my Ph.D.. I have been in the Languages and Architecture group for about 2.5 years. My supervisor is Prof. David May. I have reached the end of my EPSRC funding period.
+
+<h3>Last six months</h3>
+
+<ul>
+<li>Made gcc/newlib ports into workable tools for DOP
+<li>Able to compile & execute multi-module C programs with libraries
+<li>Simplified multi-word transfer instructions
+<li>Written a portion of the dynamic optimiser
+</ul>
+
+<h3>Next six months</h3>
+
+<ul>
+<li>Continue implementation of run-time optimiser
+<li>Make test binaries, analyse performance
+<li>Write up thesis!
+</ul>
+
+<h2>Publications</h2>
+
+<p>A paper entitled "DOP - an architecture for dynamic optimisation" has been submitted to the "2004 International Symposium on Code Generation and Optimization with Special Emphasis on Feedback-Directed and Runtime Optimization" in San Jose, California. The paper outlines the work done so far on the DOP system.
+
+<h2>Project status</h2>
+
+<p>The GCC compiler and Newlib library work <a href="http://panic.cs.bris.ac.uk/dop">sufficiently well</a> on my architecture (DOP) so that small test executables work more or less properly. I have made it so that it is possible (with some amount of effort) for others to patch freely available software with my changes so that they too can build DOP executables.
+
+<p>I have been learning powerful <a href="http://www.venge.net/graydon/talks/mkc/html/index.html">static metaprogramming techniques</a> to build an efficient, safe implementation of the dynamic optimiser software. I will discuss these techniques below.
+
+<p>I have demonstrated that code structured as basic blocks with indirect control flow is just as amenable to compilation from 'C' as regular instruction-based machine code, though I do not know if this is particularly novel.
+
+<h2>Implementation strategy</h2>
+
+<p>The code I am writing is not a "real" implementation of the DOP architecture, but rather a model which will allow experimentation with algorithms and resource constraints. A "real" implementation would run code in silicon, and run the optimiser in one of several configurations:
+
+<ul>
+<li>As an operating system service
+<li>As a low-level sub-operating system service, controlled by hardware interrupts and "invisible" to OS-level code (the Transmeta approach)
+<li>As a piece of dedicated hardware running in parallel to the code-running silicon
+</ul>
+
+<p>The model approach uses a software simulator on a host machine to run code, and a separate optimiser running on [the same] host machine to optimise code. The two programs share some source for convenience, but run as separate entities, communicating over a socket.
+
+<p>This should allow configurations to mimic the cases outlined above, to see what the benefits each would bring. There is no need to waste time producing a single, highly optimised optimiser in a low-level language when the same algorithms can be implemented in a <a href="http://caml.inria.fr/">powerful high level language</a> and may end up running <a href="http://www.bagley.org/~doug/shootout/">just as fast</a>.
+
+<p>There may be an additional benefit in that a stand-alone optimiser, even for a "weird" architecture, could well be a useful thing to the world at large for compiler development -- particularly if at some later stage a code-translating backend were added (going with the theory that DOP code is somewhat like a typical 3-address code).
+
+<h1>The optimiser</h1>
+
+<p>The discussion below is about the optimiser part of the system. It is not about executing code, nor about profiling running code. Those topics will be covered in due course.
+
+<h2>Abstraction</h2>
+
+<p>The first milestone in implementing the dynamic optimiser is to feed it each basic block in a running program, and have it converted to a sensible internal representation and back. I call the internal representation an "abstract syntax tree" because it is similar to the AST used in a typical compiler, although that is perhaps not entirely accurate because there's no "concrete syntax" in the optimiser.
+
+<p>This stage basically works for the integer subset of the ISA. The AST is more expressive than flat binary code, and does not suffer from the problems of encoding instructions in a fixed-size format, for example limited-range immediate fields. As such, this phase is pretty straightforward. The translation is "dumb", and does not try to do any "clever tricks" by itself to improve translated code. (Those come later.) Certain instructions are translated into combinations of simpler primitive AST nodes, but not to an extent where translating them back into physical code is more difficult because of it.
+
+<h2>Canonicalisation and optimisation</h2>
+
+<p>With the code for a block (or set of blocks under scrutiny) in the form of ASTs, we can perform a several "typical" optimisations performed by a traditional compiler. These might include arithmetic simplification, copy propagation, common subexpression elimination, constant propagation, etc.
+
+<p>Only a simple canonicalisation phase for control-flow instructions is present at the moment. More can be worked on once the identity transform is shown to work satisfactorily.
+
+<h2>Limitations</h2>
+
+<p>Each set of blocks will have certain preconditions and postconditions. For modified blocks, these conditions must be maintained, or at least protected with guards. We must perform only conservative optimisations, to prevent the possibility of program semantics being altered.
+
+<p>DOP uses annotations to increase the scope of conservative optimisations. In particular, registers are marked as dead by certain instructions, which often prunes the set of live registers at the end of a given block significantly. As the only "scratch space" available for optimised code is CPU registers, this is particularly important.
+
+<p>We cannot change the semantics of memory-affecting instructions. In particular, we cannot remove load and store instructions unless we can prove that they reference the same memory cell where that would be redundant due to other load or store instructions. Unless we tag volatile accesses, we cannot even remove instructions in those cases. Luckily GCC gives us access to this information in the relevant place.
+
+<h2>Concretisation</h2>
+
+<p>After optimisation, the AST representation must be translated back into binary code. Since transformations may have yielded arbitrary AST trees, not just those which are output from the abstraction stage, the algorithm used to do this must be sufficiently powerful to cover any AST tree. An algorithm which produces an optimum tiling over the AST tree is definitely preferable, to avoid the possibility of code actually becoming worse over successive optimisation passes.
+
+<p>The well-known dynamic programming algorithm is used for instruction selection. New temporaries may be introduced in this step for complex ASTs.
+
+<p>This stage works well enough to translate back into binary code a large subset of the AST dealing with integer arithmetic, but needs further testing.
+
+<h2>Static metaprogramming</h2>
+
+<p>The use of Objective CAML and the Camlp4 preprocessor system has afforded a very powerful way of implementing several parts of the dynamic optimisation system. There is a mechanism by which it is possible to embed entire languages, complete with parsers and lexers, into normal O'Caml source code, with zero overhead at run-time and the full benefits of a powerful type-checking system. An example, two custom quotation extensions to the O'Caml language allow me to write fragments of AST and fragments of assembly language like this:
+
+<pre>
+  &lt;:rule&lt; rd &lt;- rm + rn &gt;&gt;
+  &lt;:asm&lt; add `rd,`rm,`rn &gt;&gt;
+</pre>
+
+<p>The first expander (rule) is converted into an O'Caml function at compile time which will only match an AST node of the correct form, throwing an exception on failure. Simultaneously, it will bind the names "rd", "rm" and "rn" into an environment. These two lines plus a cost, and many more like it for each of the possible DOP instructions, form a large part of the instruction selection algorithm.
+
+<p>The second expander (asm) expands into a function which takes an environment and returns a list of assembled instructions in the internal form. It is in fact a complete (integer subset at the moment) reimplementation of the DOP assembler, minus facilities to handle labels and relocations. Needless to say, being able to quote assembly language fragments (even interactively, using the Camlp4 toplevel) is tremendously useful.
+
+<h2>Further information</h2>
+
+<p>You can read more about the background, status and future plans of the DOP project in the paper I have submitted to CGO 2004.
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+\chapter{Experimental apparatus}
+
+\section{Run-time system}
+
+The DOP architecture uses a slightly modified version of the execution environment of a typical computer in order to efficiently optimise code at run-time. This section will describe the assumed typical environment, and the changes we propose to make to it.
+
+\subsection{Typical environment}
+
+A simple cross-sectional model of the execution of applications on a typical computer is illustrated in figure \ref{runtime1}. For now, we are only interested in the execution of instructions, so memory accesses, I/O and so on have been omitted.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{runtime1.eps}}
+\caption{\label{runtime1}Simplified run-time system}
+\end{figure}
+
+Several applications appear to run simultaneously on our model computer, through virtualisation of the CPU and address space provided (in this case) by the operating system. This is a good model for simple hardware.
+
+A more modern system uses the idea of \emph{feedback} in various ways to improve performance. This idea encompasses several different actual techniques, including the use of instruction and data caches, branch prediction, out-of-order execution and hardware prefetching. Figure \ref{runtime2} illustrates this more complex run-time environment.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{runtime2.eps}}
+\caption{\label{runtime2}Run-time system with feedback}
+\end{figure}
+
+These feedback mechanisms are usually implemented entirely in hardware, and are almost transparent to the operating system and application software. Many types of computer system have grown organically to incorporate more types of feedback mechanism over time (more levels and quantity of cache, out-of-order execution, and so on).
+
+\subsection{Modified environment}
+
+The major changes we propose are the addition of a software layer to perform more complex types of feedback-directed optimisation at run-time, and the ability to efficiently modify binary code in-place. Our run-time system merges together the ideas presented by feedback-directed optimisation, and the feedback mechanisms present in modern CPUs. This is illustrated graphically in figure \ref{runtime3}.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{runtime3.eps}}
+\caption{\label{runtime3}Run-time system with dynamic optimiser}
+\end{figure}
+
+The optimiser runs semi-independently of the OS, at a lower level so that the OS itself can be dynamically optimised\footnote{This area needs much more work!}. Application programs are definitely not aware of the presence of the optimiser though.
+
+Part of the optimiser (profiling, at least) is implemented in hardware, since that is typically a bottleneck in existing DO systems.
+
+This, in theory, is how real hardware based on the DOP architecture would work. However, for pragmatic reasons it is necessary to bootstrap the system using a much simpler model. The simplifications we must make are:
+
+\begin{itemize}
+\item We do not have the resources to build a CPU in the first instance, so we will use emulation instead of hardware.
+\item We cannot implement a full operating system, so we restrict ourselves to using `stubs' to interface with a host OS (Linux). We will only emulate one process at a time, not a full multi-tasking system.
+\item Although we have a working compiler, the optimiser itself will be written in a different language (Ocaml), so will execute on the host machine and not the emulated machine.
+\end{itemize}
+
+The run-time model for our experiments will thus look like figure \ref{runtime4}. This will allow us to concentrate on algorithms, rather than any particular concrete implementation of any of the constituent parts of the system.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{runtime4.eps}}
+\caption{\label{runtime4}Simplified model for dynamic optimisation}
+\end{figure}
+
+\section{Compiler tools}
+
+The DOP compiler tools are fairly typical. Figure \ref{toolchain} illustrates the compilation of multiple C source files into a binary image, the only difference to any other architecture being the addition during linkage of a global index locating each basic block (see next chapter for more details).
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{toolchain.eps}}
+\caption{\label{toolchain}DOP toolchain}
+\end{figure}
+
+In contrast, modern CPU architectures benefit from explicit feedback-directed optimisation (figure \ref{fdo}). There are several difficulties associated with such a system. Firstly, we must gather a corpus of typical data to generate the profile data. Secondly, we must compile our program at least twice, with an execution run between each compilation using our data corpus. Thirdly, the presence of profiling code might skew the profile data we are trying to gather.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{fdo.eps}}
+\caption{\label{fdo}Typical feedback-directed optimisation}
+\end{figure}
+
+A secondary effect, due to a combination of factors, cannot be underestimated. Ideally, program development should be carried out at the same level of optimisation as the intended release version of the software, to minimise the likelihood of bugs, either in the compiler itself or in the code, and exposed through aggressive optimisations.
+
+Now, if FDO is being used, each time the programmer wants to test his code, he should do a full feedback-directed optimisation cycle. The annoyance factor for the programmer makes this extremely unlikely, and is in itself probably enough to make manual FDO effectively useless.
+
+In contrast, the DOP approach (figure \ref{feedback}) is transparent to application programmers, does not require the seperate execution step with typical data, and has the ability to modify its behaviour depending on different data sets or points in program execution.
+
+\begin{figure}[tmb]
+\centerline{\epsfbox{feedback.eps}}
+\caption{\label{feedback}DOP feedback-directed optimisation}
+\end{figure}
+
+\subsection{GCC port}
+
+The GCC compiler has been retargeted to the DOP ISA, to provide a source of test benchmark binaries for the system. At the time of writing we can compile and successfully execute several integer-based codes, although limitations in the OS stub layer prevent arbitrary programs from compiling successfully.
+
+Programs we have compiled and run include:
+
+\begin{itemize}
+\item GCC's internal library
+\item Newlib C library (and maths library)
+\item \texttt{gzip} file compression utility
+\item \texttt{bzip2} file compression utility
+\item \texttt{madplay} Integer MP3 decoder
+\item Many small test programs
+\end{itemize}
+
+We have successfully convinced GCC to do two unusual things in our generated code. The first is to preserve some variable (register) liveness information, which allows greater freedom in performing optimisations later on. The second is to (conceptually) output code as basic blocks rather than a flat instruction stream, using references (indirected pointers) rather than pointers between blocks.
+
+\subsection{Newlib port}
+
+Newlib is a fairly comprehensive standard C library which allows C code to be easily run on embedded systems with extremely minimal or no operating systems. We have successfully ported it to the DOP architecture. Newlib requires very basic `glue' to its underlying operating system, which we provide through a small set of software interrupts (system calls). These are trapped by the instruction-set emulator and passed to our host operating system after suitable modification.
+
+The Newlib port and emulator together allow emulated programs to accept command-line arguments, read and write files and perform standard input/output to a terminal.

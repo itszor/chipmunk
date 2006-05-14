@@ -1,0 +1,436 @@
+<html>
+<head>
+<title>The State of Dynamic Optimisation</title>
+</head>
+<body>
+
+<center><h1>The State of Dynamic Optimisation</h1></center>
+
+<p>Aim to summarise the state of dynamic optimisation, since there now seem to be lots of projects which are reusing the same few basic techniques, with various degrees of success and/or failure. This is a precursor to trying to find a universally unfollowed theme to continue on myself.
+
+<h3>Overall approaches</h3>
+
+<ul>
+<li>Software-only translation
+  <ul>
+  <li><a href="http://www.ac.upc.es/dixie">Dixie</a>
+  <li><a href="http://simos.stanford.edu">SimOS</a>/<a href="http://www-flash.stanford.edu/Embra/">Embra</a>
+  <li><a href="http://www.eecs.harvard.edu/machsuif/research/deco.html">Deco</a>
+  <li><a href="http://etch.cs.washington.edu">Etch</a>
+  <li><a href="http://www.cs.uoregon.edu/~cogswell/tibbit/index.html">TIBBIT</a>
+  <li><a href="http://www.csee.uq.edu.au/csm/uqbt.html">UQBT</a>
+  <li><a href="http://www.support.compaq.com/amt/fx32">FX!32</a>
+  <li><a href="http://www.support.compaq.com/amt/freeport">FreePort Express</a>
+  <li><a href="ftp://vorlon.mit.edu/pub/ardi/executor-faq.html/index.html">Executor</a>
+  <li><a href="http://www.cs.washington.edu/research/compiler/papers.d/shade.html">Shade</a>
+  <li><a href="http://www.transitives.com">Transitive Tech</a> Dynamite
+  <li>Insignia RealPC
+  <li>Apple's <a href="http://product.info.apple.com/pr/press.releases/1997/q1/961118.pr.rel.mae.html">MAE</a>
+  <li>Sun Wabi
+  <li>Lots of others
+  </ul>
+<li>Software-only optimisation, dynamic
+  <ul>
+  <li><a href="http://www.hpl.hp.com/cambridge/projects/Dynamo">HP Dynamo</a>. <a href="#dynamo">More</a>.
+<p>Eek! Dynamo has come a hell of a long way. Check that shit out!
+  <li><a href="http://www.ece.wisc.edu/~jes/902/papers/mojo.pdf">MS Research Mojo</a>
+  </ul>
+<li>Software-only optimisation, offline, post-compile
+  <ul>
+  <li><a href="http://www.tru64unix.compaq.com/spike">Compaq Spike</a>
+  <li>Morph
+  <li><a href="http://www.cs.arizona.edu/alto">Alto</a>
+  </ul>
+<li>Hardware/software hybrid translation
+  <ul>
+  <li>Transmeta Crusoe
+  <li>Elbrus E2K
+  <li>IBM Daisy
+  <li>IBM BOA
+  <li>Sun MAJC
+  </ul>
+<li>Hardware/software hybrid optimisation (ie, my field)
+  <ul>
+  <li><a href="http://world.std.com/~gorton/professional/deaver.pdf">Wiggins/Redstone</a>
+  </ul>
+</ul>
+
+<h3>Profiling & trace gathering</h3>
+
+<h4><a name="dynamo">Dynamo</h4>
+
+<p><img src="dynamo-how.jpg">
+
+<p><img src="dynamo2.png">
+
+<h4>Wiggins/Redstone</h4>
+
+<ul>
+<li>Identify a hot instruction (hardware PC sampling?)
+<li>Build a trace containing the instruction (how?)
+<li>Instrument the trace
+<li>Specialize the trace
+<li>Optimize the trace
+</ul>
+
+<p>No proper algorithm given, it seems...
+
+<h4>Mojo</h4>
+
+<img src="mojo-structure.png">
+
+<p>Executes code one basic block at a time. Uses a "lightweight disassembler" to identify control-flow instructions. These are then copied to a basic block cache, and modified to transfer control back to the dispatcher. Additional information about the basic block is retained, eg what type of control transfer instruction it originally ended with, which is used to build "hot paths".
+
+<p>These basic blocks are then used to gather frequency data equivalent to the original basic blocks, by the way they return to the dispatcher. If some threshold is passed for a single block, a trace is started, presumably linking together a particular path through the code. Some stuff I don't understand.
+
+<h4>Embra</h4>
+
+<img src="embra-dispatch.gif">
+
+<p>"The main dispatch loop of a dynamic translation simulator checks to see if the translation for the current simulated PC is present in the translation cache. If the translation is present, it is executed, otherwise the translator is called to generate it. Having translations constantly return to the main dispatch loop is the performance concern addressed by chaining."
+
+<h4>Executor</h4>
+
+<p>Looks like it pretty much uses the "JIT" approach. When a <tt>jsr</tt> is encountered, it compiles the target routine and modifies the "jsr handler" (?) to point directly to the target routine. Compilation continues for other code which can be reached from the leader instruction, but not through jsrs. Does that mean it does code walking is done?
+
+<p>"Syn68k does not attempt to generate native code for a basic block until that block (or a nearby one) has been executed 50 times." Uses a hash table to maintain basic block information.
+
+<h3>Optimisations attempted</h3>
+
+<h4>Trace flattening</h4>
+
+<p>Called various things by various projects, this is perhaps the most important technique in dynamic optimisation to date. From <a href="http://www.program-transformation.org">program-transformation.org</a>:
+
+<blockquote>
+<p>The idea is to position the basic blocks of a procedure in such a way that most executions of the code will fall through branches (forward branches are typically predicted to not be taken). This minimizes the cost of branch mispredictions, and keeps commonly executed code together. The latter will have the effect of making best use of the instruction cache, and minimizing cache collisions. 
+
+<p>Such optimal positioning of basic blocks can be very effective at speeding up programs, especially when the information about branch frequencies is obtained dynamically (i.e. as the program is running).
+</blockquote>
+
+<p><img src="dynamo-block-layout.png">
+
+<p>Practiced by:
+
+<ul>
+<li>BOA (?)
+<li>Dynamo (Fragment Optimizer)
+<li>Wiggins/Redstone: "Does not modify program memory layout"
+<li>Mojo: "Hot paths"
+<li>"Hot cold optimization" in HCO
+<li>Spike: program layout (?)
+<li>Deco: generates "hot paths", (superblocks with common case as straight-line code)
+<li>Etch (static program/data layout)
+</ul>
+
+<h4>Speculative indirect branch conversion</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Dynamo
+<li>Embra (speculative chaining)
+<li>HP Dynamo (indirect branch linking)
+</ul>
+
+<h4>Combining (?)</h4>
+
+<p>Something to do with symbolic arithmetic on address calculations. Practiced by:
+
+<ul>
+<li>Daisy
+</ul>
+
+<h4>Constant propagation/constant folding</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>HP Dynamo
+</ul>
+
+<h4>Copy propagation</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Alto
+<li>Deco
+<li>Daisy
+<li>HCO
+<li>HP Dynamo
+</ul>
+
+<h4>Load-Store Must Aliases</h4>
+
+<p>When it can be proved that a load from a particular address directly follows a store from the same address, the load can be eliminated. Practiced by:
+
+<ul>
+<li>Alto
+<li>Daisy
+<li>HP Dynamo
+</ul>
+
+<h4>Load-Verify</h4>
+
+<p>Moves loads as early as possible. If at least one store is present before the value is used, a load-verify instruction is inserted & if the value loaded is different a "load verify trap" is taken (and presumably, the intervening instructions are invalidated). Practiced by:
+
+<ul>
+<li>Daisy
+<li>HP Dynamo (guarded load)
+<li>IA-64 (data speculative loads)
+</ul>
+
+<h4>Dead Code Elimination</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Crusoe
+<li>Daisy
+<li>HP Dynamo
+</ul>
+
+<h4>Partially-dead code removal</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Deco: removes dead code on hot paths, and compensates if necessary by adding fix-up code in the stubs which are executed in the cold case
+<li>HCO
+</ul>
+
+<h4>Unification (?)</h4>
+
+<p>Specific to Daisy's VLIW-ness, I think. Practiced by:
+
+<ul>
+<li>Daisy
+</ul>
+
+<h4>Unrolling</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Daisy
+<li>HP Dynamo
+</ul>
+
+<h4>Loop invariant removal</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Crusoe
+<li>HP Dynamo
+</ul>
+
+<h4>Common sub-expression elimination</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>Crusoe (no further details)
+</ul>
+
+<h4>Strength reduction</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>HP Dynamo
+</ul>
+
+<h4>Redundant branch removal</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>HP Dynamo
+</ul>
+
+<h4>Multi-versioning</h4>
+
+<p>Practiced by:
+
+<ul>
+<li>HCO
+<li>Spike (HCO)
+<li>HP Dynamo
+</ul>
+
+<h4>Return Target Buffer (software)</h4>
+
+<ul>
+<li>Executor: maintains a "return target buffer", called a jsr stack by them. Verifies rts address at runtime.
+</ul>
+
+<h3>Common specialised hardware features (Crusoe, BOA)</h3>
+
+<ul>
+<li>Register rollback
+<li>Alias hardware (Crusoe)
+<li>Speculative stores
+</ul>
+
+<h3>Stuff to leave in from OOO processors (Crusoe, BOA)</h3>
+
+<h3>Garbage collection, replacement policy</h3>
+
+<p>The work on this doesn't seem too complete. Perhaps there's more.
+
+<h4>Crusoe</h4>
+
+<p>Uses a large fixed-size cache. No info on replacement policy.
+
+<h4>Dynamo</h4>
+
+<p>Uses a pre-emptive flushing mechanism of the whole of its fragment cache. Rather than extending the cache or flushing it when it becomes full, it is flushed when a sharp increase in fragment creation rate is noticed. This means that phased behaviour of code, eg change in working set after certain periods of time, is handled well.
+
+<p>Seems to work well for them in practice. 
+
+<h4>Embra</h4>
+
+<p>Fixed size cache? Fully flushed on self-modifying code.
+
+<h4>Executor</h4>
+
+<p>Checksums blocks to avoid unnecesary recompilation. Doesn't seem to be any other information.
+
+<h4>Mojo</h4>
+
+<p>Uses a private basic block cache per thread (64k) and a shared path cache. path cache size chosen between 512kb-5Mb depending on executable size. Mojo makes programs slower.
+
+<h4>Wiggins/Redstone</h4>
+
+<p>Maintains 16 or so "traces" at any given time. Traces are removed "as computation evolves", so perhaps LRU or something?
+
+<h3>Project notes</h3>
+
+<h4>Alto</h4>
+
+<p>Alto appears to be a load-time optimizer for the Alpha processor.
+
+<h4>BOA</h4>
+
+<p>BOA is Crusoe for PowerPC. That is, it's a VLIW processor which exposes its gritty internals to a virtual machine monitor, which hosts all code above it as if it were running on a native PowerPC. It has special features to support binary translation. Inspired by work (also at IBM) on Daisy, also FX!32.
+
+<h4>C-Mix</h4>
+
+<p>Abstract:
+<blockquote>
+<p>C-Mix is a tool based on state-of-the-art technology that solves the dilemma of whether to write easy-to-understand but slow programs or efficient but incomprehensible program. C-Mix allows you to get the best of both worlds: you write the easy-to-understand programs, and C-Mix turns them into equivalent, efficient ones. As C-Mix is <i>fully automatic</i>, this allows for faster and more reliable maintenance of software systems: system programmers need not spend hours on figuring out and altering the complicated, efficient code.
+<p>C-Mix is a <i>program specializer:</i> Given a program written in C for solving a general problem, C-Mix generates faster programs that solve more specific instances of the problem. Application areas include model simulators, hardware verification toos, scientific numerical calculations, ray tracers, interpreters for programming languges (Java bytecode interpreters, task-specific interpreters), pattern matchers and operating system routines.
+<p>C-Mix currently runs on Unix systems supporting the GNU C compiler, and treats programs strictly conforming to the ISO C standard. Future releases of C-Mix are intended to run on a variety of platforms.
+</blockquote>
+
+<p>By "fully automatic" they don't <i>really</i> mean fully automatic - C-Mix doesn't figure out what to specialise itself I don't think.
+
+<h4>Crusoe</h4>
+
+<p>Transmeta's Crusoe processor is designed with dynamic code translation in mind. It includes hardware support for precise exceptions and speculation in rescheduled code (shadow registers), optimization of memory operations (alias hardware), and self-modifying code (a "translated" bit in the MMU). It works on non-native binaries, to transparently execute IA-32 code on its own VLIW processor core.
+
+<p>Crusoe's method of operation is otherwise similar to that used by various emulation systems. It starts out emulating code, then for frequently executed sections it does a 'rough' translation to its own native code. These translations are cached and further optimised over time the more they are executed. By this method the designers claim that performance comparable to a modern hardware IA-32 implementation is obtained. (Hint: not faster).
+
+<h4>Daisy</h4>
+
+<p>Daisy is a dynamic binary translator from PowerPC code to a new (PowerPC-based) VLIW target. The VLIWs are unusual in that they are trees (I don't entirely understand how they work). This might be the same as what I was proposing for my research, I'm not sure. Seems like a bit of a toy, but is a precursor to BOA.
+
+<h4>Deco</h4>
+
+<p>Deco is a proof-of-concept dynamic optimisation system. Abstract:
+
+<blockquote>
+<p>This thesis describes the design of a software system capable of automatically performing code optimizations at run-time. Rather than attempting to run all optimizations statically, a compiler produces an executable capable of monitoring its own run-time behavior and performing on-the-fly optimizations which take advantage of current execution patterns. This technique, which we call <i>dynamic optimization</i>, potentially adds a high degree of adaptability to code optimization, postponing optimization decisions until the exact nature of the input set or program phase is known, and allowing these decisions to chnage as program behavior changes. The goal of this thesis is to demonstrate that dynamic optimiaztion is both feasible and profitable.
+</blockquote>
+
+<p>Also ripped from the dissertation describing Deco:
+
+<ul>
+
+<li>It puts forth the idea of dynamic optimization: the run-time selection and optimization of program regions to take advantage of current program behavior. It points out the potential benefits and pitfalls of this technique.
+
+<li>It identifies and explores the key issues involved in dynamic optimization: the identification of interesting program regions and the optimization of these regions.
+
+<li>Preliminary results: Deco shows improvement in running time between -3% and 8% depending on the program. The main overhead seems to be in instrumentation, and optimization to a much lesser extent.
+
+</ul>
+
+<h4>Dixie</h4>
+
+<p>Dixie is a RISC architecture, meant as a target for binary translation work. Also, abstract:
+
+<blockquote>
+<p>Dixie is a toolset that enables computer architecture researchers to instrument and monitor all aspects of certain binary when run on its native environment. Dixie is even able to provide instructions on the "wrong path" of a program. Moreover, Dixie has cross-platform capabilities, allowing a researcher to trace a binary specified in ISA 'a' on a workstation with a different ISA 'B'. Not only that, but through its emulation capabilities, Dixie enables researchers to explore extensions to current ISAs and even to design, emulate and evaluate a completely new ISA.
+</blockquote>
+
+<p>Dixie is used as an intermediate language in binary translation. Dixie ate my homework.
+
+<h4>Dynamite</h4>
+
+<p>Dynamite is the product of Transitive Technologies, a spin-off from Manchester University. They have a M-to-N dynarec, but have yet to impress the world at large from what I can tell, i.e. me. They have Powerpoint slides on their web site.
+
+<h4>Embra</h4>
+
+<p>Embra is a dynarec, with only a 3-9 times slowdown behind native code (which is pretty good as these things go). They do full-machine simulation, but it doesn't look like they attempted any hardcore optimisation. They do "chaining", which is like ARMphetamine's xjmp inst.
+
+<h4>Etch</h4>
+
+<h4>Executor</h4>
+
+<p>Interesting features re: specific hacks for translating m68k to x86, such as postincrement or whatever being turned into relative offsets. Not really relevent here though.
+
+<h4>FreePort Express</h4>
+
+<p>FreePort Express is (was) a static translator, capable of translating MIPS binaries to Alpha systems. It presumably must have needed some knowledge of the compiler used to generate MIPS code, and failed on some (system level or architecture-dependent) input.
+
+<h4>HCO</h4>
+
+<p>HCO (the system described in the paper "Hot Cold Optimization of Large Windows/NT Applications") splits functions into two versions, one "hot" and one "cold". The hot version contains a compacted version of the common case, hoping to ensure that all code bought into the instruction cache is executed. In addition to the "cold" version of the code, fix-up stubs are created to restore the machine state in the cases the "hot" code is invalid.
+
+<p>HCO provides a "reduction in path length" of 3-8%, though this doesn't seem to be interpreted as speed-up in the paper for some reason (not read too carefully mind).
+
+<h4>HP Dynamo</h4>
+
+<p>HP Dynamo is a software-based dynamic optimiser for PA-RISC/HPUX. It is capable of increasing the speed of +O2 compiled executables to that comparable to their +O4 counterparts. +O4 executables can also receive a speed boost. Dynamo is regarded as the leader in the field, and has progressed a lot so that there are now versions for ARM, etc. which can be used in embedded applications.
+
+<h4>MAE</h4>
+
+<p>Apple's environment for running Mac software on Unix. Employed some code translation, apparently.
+
+<h4>MAJC</h4>
+
+<p>MAJC is a VLIW chip with some features to enable code translation (ie, from Java bytecodes). Mostly vapourware, though they do have a picture of a chip on their website. Amazing what you can do with Photoshop.
+
+<h4>Mojo</h4>
+
+<p>Mojo is the Microsoft Research take on Dynamo. They aim for a more difficult problem, by tackling x86 code of the spaghetti GUI variety, ie their own dog food. Additional complexity of multi-threading. This hasn't worked too well for them so far, most programs slow down in fact.
+
+<h4>Morph</h4>
+
+<h4>Progressive Profiling</h4>
+
+<h4>RealPC</h4>
+
+<h4>Shade</h4>
+
+<h4>Spike</h4>
+
+<p>Offline (but post-compile) optimisation of Alpha/NT executables. Results claimed are very good, apparently up to 33% improvement. Spike is good for call-intensive rather than loop-intensive applications. Traditional compilers are more suited to optimising the latter.
+
+<h4>TIBBIT</h4>
+
+<h4>UQBT</h4>
+
+<h4>Wabi</h4>
+
+<h4>Wiggins-Redstone</h4>
+
+<p>Unpublished work. Dynamic optimisation system with some hardware support (hardware based sampler, apparently nothing not included in "stock hardware/stock OS" though). Good results.
+
+<p>Creates multiple "traces", which may be up to 2000 instructions long. They claim this is long enough to insert pre-fetch instructions.
+
+<h4>fx!32</h4>
+
+</body>
+</html>

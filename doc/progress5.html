@@ -1,0 +1,64 @@
+<html>
+<head>
+<title>Progress Report, March 2003</title>
+</head>
+<body>
+
+<center><h1>Progress Report, March 2003</h1></center>
+
+<h3>Information</h3>
+
+<p>I, Julian Brown, am approximately 2.5 years into my Ph.D.. I have been in the Languages and Architecture group for about 2 years. My supervisor is Prof. David May. My funding will expire in six months.
+
+<h3>Last six months</h3>
+
+<ul>
+<li>Tweaks to instruction-set
+<li>Start of cycle-accurate cache/memory simulation
+<li>Improvements to toolchain
+<li>Lots of work put into retargeting gcc
+<li>Cross-compiler, support library, newlib C library, math library built
+<li>Nearly able to link working executables
+</ul>
+
+<h3>Next six months</h3>
+
+<ul>
+<li>Finish gcc, newlib ports
+<li>Make test binaries, analyse performance
+<li>Continue implementation of run-time optimiser
+<li>Start writing up thesis!
+</ul>
+
+<h2>Instruction-set tweaks</h2>
+
+<h3>Floating-point instructions</h3>
+
+<p>A set of basic floating-point instructions has been specified. There are 64 IEEE 754 double-precision floating-point registers. Arithmetic operations are defined for both single and double precision. There is currently no "hidden state" in FP code (or any other code), such as rounding mode etc. -- these things are specified in each instruction as needed.
+
+<p>There is a weak type system for floating-point values. Single-precision values are stored in double-precision format (as in PowerPC architecture). Attempt to use the wrong type of instruction for a particular format would lead to undefined behaviour, ie a double-precision operation with single-precision operands might lead to garbage in the low-order bits.
+
+<p>I did not originally intend to implement floating-point instructions at all, but it turns out to be easier than convincing gcc not to need them. I will not initially focus on codes which use floating-point arithmetic heavily since that brings in a whole new set of problems, but they should at least not cause the optimiser to break.
+
+<h2>Improvements to toolchain</h2>
+
+<p>The assembler now knows how to assemble floating-point instructions, and numerous small bugs have been fixed. The grammar for assembler code has been relaxed in some places to make it easier to read gcc's output. Code and data sections are now fully supported, and use syntax more like standard assemblers than before (directives specify the start of a section only, rather than using a block with start/end pair).
+
+<p>Each basic block parsed by the assembler was previously required to finish with a control-flow instruction. This is no longer the case. It is now possible to omit the flow-control instruction, and an implicit jump instruction is inserted to transfer control to the following block. In certain cases this leads to sub-optimal code (jumps to jumps) which could be easily be removed at compile time, but this is not currently done. (It's "easy" but fiddly, and I think regression tests should be in place before attempting that sort of thing).
+
+<p>The linker now knows how to read static library files (Unix "ar" format archives) as well as object files, and does a tree walk to recursively pull in object files which are referenced by others. More GNU binutils-style command line options are recognized, up to the point where it can be used transparently by gcc.
+
+<h2>Retargeting gcc</h2>
+
+<p>GCC is not a nice piece of software. There are three description files to be written, a machine description (.md), target macros (.h) and support functions (.c). Unfortunately, these are all confusing, ill-defined, redundant and fragile. C is the wrong language to write a C compiler in.
+
+<p>Retargeting gcc is taking longer than anticipated, but it is going quite well now. I <i>need</i> a working compiler before I can sensibly start working on the actual dynamic optimiser.
+
+<h2>Other dynamic optimisation research</h2>
+
+<p>In the outside world, I came across <a href="blabla">this piece of work</a>, which whilst less ambitious than what I am planning, is a reminder that these techniques are probably going to be useful in the real world. Sample statistics, code is %% smaller whilst running between %% and %% as fast, and taking %% less time to compile.
+
+<p>I should probably admit that I haven't looked at as much academic work in the field as I should have recently, since gcc is taking up all my work-time concentration.
+
+</body>
+</html>

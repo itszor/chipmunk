@@ -1,0 +1,244 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+[
+ <!ATTLIST svg
+  xmlns:xlink CDATA #FIXED "http://www.w3.org/1999/xlink">
+]>
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   id="svg30"
+   sodipodi:version="0.26"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   width="210mm"
+   height="297mm"
+   transform="translate(0.000437811,0.000433136)"
+   style="stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;"
+   sodipodi:docbase="/home/jules/coding/simch/doc/"
+   sodipodi:docname="/home/jules/coding/simch/doc/compiling.svg">
+  <defs
+     id="defs32"
+     style="stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;">
+    <linearGradient
+       id="linearGradient34"
+       style="stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;">
+      <stop
+         style="stop-color:#000;stop-opacity:1;stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;"
+         offset="0"
+         id="stop35" />
+      <stop
+         style="stop-color:#fff;stop-opacity:1;stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;"
+         offset="1"
+         id="stop36" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient34"
+       id="linearGradient37"
+       style="stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     style="stroke:#000000;stroke-opacity:1;fill:none;stroke-width:1.25;" />
+  <rect
+     style="font-size:12;fill-rule:evenodd;stroke-width:0.778338;fill:#e7eaea;fill-opacity:1;"
+     id="rect33"
+     x="58.184837"
+     y="86.339310"
+     width="141.907799"
+     height="66.609783"
+     rx="0.000000"
+     ry="0.000000" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:middle;writing-mode:lr;"
+     x="124.794622"
+     y="122.540283"
+     id="text39">
+    <tspan
+       x="124.795"
+       y="122.54"
+       sodipodi:role="line"
+       id="tspan44">
+Source code</tspan>
+  </text>
+  <rect
+     style="font-size:12;fill-rule:evenodd;stroke-width:0.778338;stroke:#000000;stroke-opacity:1;fill:#e7eaea;fill-opacity:1;"
+     id="rect48"
+     x="56.694209"
+     y="272.092863"
+     width="141.907806"
+     height="66.609779"
+     rx="0.000000"
+     ry="0.000000" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:middle;writing-mode:lr;"
+     x="123.303999"
+     y="308.293852"
+     id="text49">
+    <tspan
+       x="123.304"
+       y="308.294"
+       sodipodi:role="line"
+       id="tspan50">
+Assembler</tspan>
+  </text>
+  <rect
+     style="font-size:12;fill-rule:evenodd;stroke-width:0.778338;stroke:#000000;stroke-opacity:1;fill:#e7eaea;fill-opacity:1;"
+     id="rect52"
+     x="55.246169"
+     y="455.993803"
+     width="141.907806"
+     height="66.609779"
+     rx="0.000000"
+     ry="0.000000" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:middle;writing-mode:lr;"
+     x="112.827010"
+     y="493.642790"
+     id="text53">
+    <tspan
+       x="112.827"
+       y="493.643"
+       sodipodi:role="line"
+       id="tspan54">
+Object code</tspan>
+  </text>
+  <rect
+     style="font-size:12;fill-rule:evenodd;stroke-width:0.778338;stroke:#000000;stroke-opacity:1;fill:#e7eaea;fill-opacity:1;"
+     id="rect56"
+     x="55.246169"
+     y="363.319304"
+     width="141.907806"
+     height="66.609779"
+     rx="0.000000"
+     ry="0.000000" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:middle;writing-mode:lr;"
+     x="121.855963"
+     y="399.520292"
+     id="text57">
+    <tspan
+       x="121.856"
+       y="399.52"
+       sodipodi:role="line"
+       id="tspan58">
+Linker</tspan>
+  </text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1.25;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 171.153 365.555 L 171.153 432.634 "
+     id="path61"
+     transform="translate(-1.49063,90.183)" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:start;writing-mode:lr;"
+     x="-511.335196"
+     y="186.776399"
+     id="text62"
+     transform="matrix(-1.83691e-16,-1,1,-1.83691e-16,0,0)">
+    <tspan
+       x="-511.335"
+       y="186.776"
+       sodipodi:role="line"
+       id="tspan65">
++index</tspan>
+  </text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 122.708 250.032 C 122.708 252.017 123.453 259.086 123.453 263.447 C 123.453 267.229 122.708 268.619 122.708 272.391 "
+     id="path68"
+     transform="translate(-1.49063,90.183)" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 124.944 340.215 C 124.944 340.463 124.944 340.711 124.944 340.96 C 124.944 340.076 124.944 346.654 124.944 348.413 C 124.944 352.14 124.944 355.866 124.944 359.593 C 124.944 360.835 124.944 362.077 124.944 363.319 "
+     id="path69"
+     transform="translate(-5.2172,90.9283)" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 156.247 340.215 C 156.247 340.463 156.247 340.711 156.247 340.96 C 156.247 340.019 156.247 345.964 156.247 347.668 C 156.247 349.786 158.721 352.885 160.719 352.885 C 160.719 355.74 169.856 357.357 171.898 357.357 C 174.885 357.357 181.588 358.022 181.588 361.083 C 182.406 361.083 184.569 364.231 184.569 364.81 "
+     id="path70"
+     transform="translate(-1.49063,90.183)" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 126.434 152.395 C 126.434 154.22 126.434 157.949 126.434 162.085 C 126.434 165.745 125.689 171.684 125.689 175.5 C 125.689 177.488 125.689 179.475 125.689 181.463 "
+     id="path71"
+     sodipodi:nodetypes="cccc" />
+  <rect
+     style="font-size:12;fill-rule:evenodd;stroke-width:0.778338;stroke:#000000;stroke-opacity:1;fill:#e7eaea;fill-opacity:1;"
+     id="rect72"
+     x="57.439523"
+     y="180.419232"
+     width="141.907806"
+     height="66.609779"
+     rx="0.000000"
+     ry="0.000000" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:middle;writing-mode:lr;"
+     x="124.049313"
+     y="216.620220"
+     id="text73">
+    <tspan
+       x="124.049"
+       y="216.62"
+       sodipodi:role="line"
+       id="tspan74">
+Compiler</tspan>
+  </text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 122.708 250.032 C 122.708 252.017 123.453 259.086 123.453 263.447 C 123.453 267.229 122.708 268.619 122.708 272.391 "
+     id="path76"
+     transform="translate(-0.745312,-1.49062)" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 139.105 428.907 C 139.105 427.041 139.85 420.445 139.85 416.237 C 139.85 413.296 140.234 409.912 138.359 408.038 C 138.359 405.048 136.758 405.057 140.595 405.057 C 145.067 405.057 149.539 405.057 154.011 405.057 C 158.99 405.057 163.677 405.802 168.917 405.802 C 171.025 407.91 179.79 406.548 183.078 406.548 C 187.801 406.548 191.643 405.802 196.494 405.802 "
+     id="path77" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:10;text-anchor:start;writing-mode:lr;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;"
+     x="150.284355"
+     y="420.708507"
+     id="text78">
+    <tspan
+       x="150.284"
+       y="420.708"
+       sodipodi:role="line"
+       id="tspan81">
+Indexer</tspan>
+  </text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 119.726 173.264 C 119.975 173.513 120.223 173.761 120.472 174.01 C 118.925 172.463 124.198 177.945 124.198 178.481 C 125.913 178.481 125.687 179.974 127.925 177.736 C 129.157 176.504 132.397 175.432 132.397 174.01 C 133.132 174.01 133.887 173.255 133.887 172.519 "
+     id="path83" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 116 262.702 C 116.248 262.95 116.497 263.199 116.745 263.447 C 114.867 261.569 120.318 267.919 121.217 267.919 C 123.403 270.105 122.959 270.399 124.944 266.428 C 124.944 265.35 126.291 262.702 127.18 262.702 "
+     id="path84" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 115.255 355.866 C 115.697 355.866 117.865 360.338 120.472 360.338 C 120.472 362.097 120.062 362.574 121.962 362.574 L 120.472 360.338 C 120.472 362.097 120.062 362.574 121.962 362.574 L 121.962 363.319 C 121.962 361.425 127.812 357.357 130.161 357.357 C 130.161 356.363 129.912 356.611 130.906 356.611 "
+     id="path85" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 114.509 447.54 C 114.769 447.54 117.108 449.393 118.981 451.266 C 118.981 452.518 120.225 454.494 121.962 452.757 C 123.558 452.757 125.315 450.15 126.434 449.03 "
+     id="path86" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 176.37 452.757 C 176.508 452.757 180.596 453.502 183.078 453.502 C 183.078 455.242 185.314 449.747 185.314 448.285 C 185.314 447.788 185.314 447.291 185.314 446.794 "
+     id="path87" />
+  <text
+     style="fill:black;stroke:none;font-family:Helvetica;font-style:normal;font-weight:normal;font-size:14;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;text-anchor:start;writing-mode:lr;"
+     x="113.827358"
+     y="333.382732"
+     id="text116">
+    <tspan
+       x="113.827"
+       y="333.383"
+       sodipodi:role="line"
+       id="tspan117">
++annotations</tspan>
+  </text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:black;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;"
+     d="M 106.311 336.861 C 106.311 336.488 106.311 336.115 106.311 335.743 C 106.311 337.154 106.311 328.237 106.311 325.681 C 106.311 322.064 104.683 313.383 108.547 313.383 C 114.133 313.383 119.285 314.501 125.316 314.501 C 130.534 314.501 135.751 314.501 140.968 314.501 C 146.558 314.501 152.148 314.501 157.738 314.501 C 162.955 314.501 168.172 314.501 173.389 314.501 C 178.606 314.501 183.823 314.501 189.041 314.501 C 191.649 314.501 194.258 314.501 196.866 314.501 "
+     id="path121" />
+</svg>

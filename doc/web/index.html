@@ -1,0 +1,316 @@
+<html>
+<head><title>DOP architecture</title></head>
+<body bgcolor="#ffffff" fgcolor="#000000" link="#0000ff" vlink="#0000cc">
+
+<h1><center>DOP architecture</center></h1>
+
+<h2>Introduction</h2>
+
+<p>This is the compiler toolchain, runtime C library and simulator for the DOP architecture from the University of Bristol. DOP binary code is designed to be easily analysed (partially decompiled) into a form where it can be further optimised at run-time by suitable supporting software. Additionally, because DOP code is based around annotated, indexed basic blocks rather than individual instructions, even automatic decompilation back to (cryptic) source code should be possible.
+
+<h2>Status</h2>
+
+<p>The existing tools are complete enough at this point to run small console programs, including gzip (file compressor/decompressor) and madplay (MP3 decoder). Output to the terminal works, as does simple file I/O (rooted at the <tt>DOP_ROOT</tt> environment variable).
+
+<p>Support for some parts of C and the C library are still incomplete. Known issues are listed in their respective sections below.
+
+<h2>Changes</h2>
+
+<h3>0.2 - 27 Oct 2003</h3>
+
+<ul>
+<li>Big-endian host support (edit sys/config.h)
+<li>Simplified multi-word load/store instructions
+<li>Diffs now for GCC 3.3.2
+<li>Fixed some linker semantics
+<li>Fixed BSS handling
+<li>More Unix emulation
+<li>Many, many bug fixes
+</ul>
+
+<h3>0.1 - 5 June 2003</h3>
+
+<ul>
+<li>Initial release
+</ul>
+
+<h2>Download</h2>
+
+<p>Click a link to download the DOP source tarball:
+
+<ul>
+<li><a href="bin/dop-0.2.tar.gz">DOP v0.2</a> - 27 Oct 2003
+<li><a href="bin/dop-0.1.tar.gz">DOP v0.1</a> - 5 June 2003
+</ul>
+
+<h2>Components</h2>
+
+<h3>chasm - assembler</h3>
+
+<p>Chasm is the DOP assembler. It accepts a text file of assembly-language source and outputs an ELF object containing the equivalent binary code.
+
+<p>Known issues with assembler:
+
+<ul>
+<li>Some of the grammar is a bit grungy, especially with regards to alignment of data and placement of labels.
+</ul>
+
+<h3>gcc-port - GCC compiler port</h3>
+
+<p>I have added support for DOP to the GCC compiler. It provides output in a form which can be used with chasm and then doplink.
+
+<p>DOP support is not in any official released version of GCC, obviously. I'm not sure of the cleanest way of making it work (easiest, most future proof), but I describe one way of doing it below.
+
+<p>Known issues with the GCC port:
+
+<ul>
+<li>You can't use floating-point arguments as unnamed function parameters (eg, stdargs or varargs). In particular, printf with floating-point arguments fails.
+<li>There is no support for setjmp/longjmp
+<li>Only C is supported in GCC, not C++/Objective C/GCJ
+</ul>
+
+<h3>newlib-port - Newlib C library port</h3>
+
+<p>Newlib should be built alongside GCC to provide a runtime C library for DOP programs. See the instructions for patching and building a GCC cross-compiler below. The port (in conjunction with the simulator) provides stubs to allow access to limited host OS functions, such as reading/writing files.
+
+<p>Known issues:
+
+<ul>
+<li>Incomplete syscalls.
+</ul>
+
+<h3>doplink - Linker</h3>
+
+<p>Doplink is a very basic linker. It accepts ELF format object files and <tt>ar</tt> (.a) archives, and produces a statically-linked ELF executable. There is little control over what is put in and left out of the executable, and it's written pretty horribly to be honest. But it does the job, and quite well.
+
+<p>Known issues:
+
+<ul>
+<li>No shared-library support.
+</ul>
+
+<h3>ar - archiver</h3>
+
+This hasn't been specifically ported. The one in my stock Debian seems to do fine (ie, the ELF that is produced from my tools is correct enough for it to be used with standard tools, more or less).
+
+<h3>libjtype - miscellaneous data types for C</h3>
+
+<p>Libjtype provides some basic types for C: doubly linked lists, circular lists, hash tables keyed by integers, binary trees keyed by strings (maps), extensible buffers, bit arrays and priority queues. It is not the best such library out there, but it is well-tested in lots of my own projects. All programmers have one of these, probably.
+
+<h3>simo - processor simulator</h3>
+
+<p>Simo is the DOP processor simulator. Although unfinished, it already simulates with "cycle accuracy" a 3-stage pipeline implementation of a hypothetical DOP core (albeit with the unrealistic assumptions that memory has zero-cycle latency, and all instructions execute in one cycle).
+
+<p>Simo is written in Objective CAML, a high-level language. While good for ensuring the code is correct (most code worked properly "first time"), the performance is somewhat less than stellar. I might investigate methods of speeding up the simulation (probably using some sort of cacheing for decoded instructions), particularly if long-running tests must be performed at a later date.
+
+<h2>Making it work</h2>
+
+<p>You need the following things to make the DOP toolchain and simulator:
+
+<ul>
+<li>Linux system, or similar (now endian-independent for host, edit sys/config.h if you have big-endian words).
+<li>DOP source tarball (see above)
+
+<li><a href="http://gcc.gnu.org/">gcc 3.3.2</a> source tarball (you
+don't need binutils unless you have a non-GNU native <tt>ar</tt>)
+
+<li><a href="http://sources.redhat.com/newlib">newlib 1.11.0</a> release tarball
+<li><a href="http://caml.inria.fr">ocaml 3.07</a>
+<li>gcc on host system for building cross compilers
+<li>To configure Newlib, you currently need autoconf 2.13 (obsolete version). Your distribution might have this as a specific package for use by old software.
+<li>Similarly, you'll need automake 1.5.
+<li><a href="http://www.gnu.org/software/make">gnu make</a>, etc. etc. etc.
+</ul>
+
+<p>Different minor version numbers for some things might work. YMMV. Newlib configuration can be very picky.
+
+<h3>Compiling DOP tools</h3>
+
+<p>This should be relatively straightforward. Unpack the DOP tarball and make:
+
+<pre>
+tar fxzv doptools-x.x.tar.gz
+cd doptools-x.x
+make
+</pre>
+
+<p>There is no configure script, so if it doesn't work on your system you'll have to edit the Makefiles the old-fashioned way. This should build (at least) as/chasm, ld/doplink for you to continue with building the compiler tools. You'll need simo/sim to run programs, or simo/sim.opt to run them quicker (native-compiled ocaml). To make the .opt version, do:
+
+<pre>
+cd simo
+make opt
+</pre>
+
+<p>Assuming you have the right compilers installed.
+
+<p>You can test the compiler with assembler source by doing:
+
+<pre>
+cd test
+../simo/sim doptest
+../simo/sim.opt doptest
+</pre>
+
+<p>The program should produce a silly message:
+
+<pre>
+Hello world
+I ate a hamster
+</pre>
+
+<h3>Preparing gcc & newlib</h3>
+
+<p>Get the versions of newlib and gcc mentioned above. Unpack them into a directory:
+
+<pre>
+tar fxzv gcc-3.x.x.tar.gz
+cd gcc-3.x.x
+</pre>
+
+<p>Now move libstdc++-v3 elsewhere, since we can't build it (yet). You don't have to move it to the directory above, just so long as gcc can't find it any more (it attempts to build it even if C++ support is supposedly disabled):
+
+<pre>
+mv libstdc++-v3 ..
+</pre>
+
+<p>Now unpack newlib-1.11.0 in the higher-level directory, and move the newlib subdirectory <b>only</b> into the top-level gcc directory (symlinking <b>does not</b> work):
+
+<pre>
+tar fxzv newlib-1.11.0.tar.gz
+cd newlib-1.11.0
+mv newlib ../gcc-3.x.x
+</pre>
+
+<p>Don't worry, the gcc configuration knows how to find these new pieces. At this stage, you should be able to build cross compilers for other architectures, should you happen to want to (though you'll probably also need bits of binutils for that).
+
+<h3>Patching gcc & newlib</h3>
+
+<p>Patching should be done in two parts. Firstly, we need to modify some of GCC's (and Newlib's) configuration files so it knows about the DOP architecture. This part is relatively stable, so it might only need to be done once. Then, the unstable parts of the tree containing the actual DOP-specific code can be copied (or symlinked) into the necessary places in the GCC tree. I'll be using symlinks, so refreshing the DOP-specific CVS tree will affect the GCC tree directly.
+
+<p>From now on we'll use the following shorthand:
+
+<ul>
+<li><tt>$GCC</tt> - gcc-3.x.x source directory
+<li><tt>$DOP</tt> - DOP source directory
+<li><tt>$PREFIX</tt> - prefix for cross-compiler binaries
+</ul>
+
+<p>You might want to set these up as environment variables in your shell.
+
+<p>The modified files are:
+
+<pre>
+$GCC/config.sub
+$GCC/configure.in
+$GCC/gcc/config.gcc
+$GCC/newlib/configure.host
+$GCC/newlib/libc/include/sys/config.h
+$GCC/newlib/libc/reent/linkr.c
+</pre>
+
+<p>If the patch doesn't work, you pretty much have to copy the entries for <tt>mmix</tt>, but substituting <tt>dop-unknown-none</tt> for <tt>mmix-knuth-mmixware</tt>. For newlib, the <tt>machine_dir</tt> and <tt>sys_dir</tt> are both <tt>dop</tt>.
+
+<p>To apply the patch, do:
+
+<pre>
+cd $GCC
+patch -p1 < $DOP/gcc-port/gcc-newlib-dop-patch.?
+</pre>
+
+<p>Where '?' is the latest patch number available. Now, you should make the symlinks to the DOP directory:
+
+<pre>
+cd $DOP/gcc-port
+sh makesymlinks.sh $GCC
+</pre>
+
+<p>'$GCC' <b>must</b> be an absolute pathname!
+
+<p>This should symlink the right files and directories, and configure the Newlib port (which needs a couple of configure files to be built from Makefile.am etc). If you get many errors during this step, make sure you are using automake 1.5 and autoconf 2.13. Other combinations don't work too well with Newlib. You can edit the makesymlinks shell script to point to different versions if necessary.
+
+<h3>Building gcc</h3>
+
+<p>In the traditional style, we are going to be building our GCC cross-compiler in a different place than the source tree. We need two things in fact: a new directory for the build tree, and a directory for the final binaries. We should set up the prefix directory first, because it will contain links to our assembler and linker. Make sure these are built first (see above), then do:
+
+<pre>
+# ln -s $DOP/asm/chasm $PREFIX/dop/bin/as
+ln -s $DOP/asm/chasm $PREFIX/bin/dop-as
+# ln -s $DOP/ld/doplink $PREFIX/dop/bin/ld
+ln -s $DOP/ld/doplink $PREFIX/bin/dop-ld
+# ln -s /usr/bin/ar $PREFIX/dop/bin/ar
+ln -s /usr/bin/ar $PREFIX/bin/dop-ar
+ln -s /bin/true $PREFIX/dop/bin/dop-ranlib
+</pre>
+
+<p>Where $(DOP) is the DOP source directory. Make the build directory somewhere, and change into it:
+
+<pre>
+mkdir build
+cd build
+</pre>
+
+<p>Now you should be able to configure your cross-compiler by writing:
+
+<pre>
+$GCC/configure --target=dop --prefix=$PREFIX --with-newlib --enable-languages="c" --with-as=$(which dop-as) --with-ld=$(which dop-ld)
+</pre>
+
+<p>Assuming this works properly, you can now type:
+
+<pre>
+make
+</pre>
+
+<p>To make the C compiler (only). You will find <a href="http://distcc.samba.org">distcc</a> very useful here, if you have more than one machine available, unless you have a single very fast computer or a lot of patience.
+
+<p>If you get warnings about bad operands from the assembler, gcc didn't find the DOP assembler right. Mess with things and run configure again. (You might need $PREFIX/dop/bin in your $PATH at this point, gcc doesn't consistently look in the $PREFIX itself).
+
+<p>If that completes successfully, you can install your new cross-compiler binaries into $PREFIX by writing:
+
+<pre>
+make install
+</pre>
+
+<p>Now add $PREFIX to your $PATH, if you haven't already:
+
+<pre>
+export PATH=$PATH:$PREFIX/dop/bin
+</pre>
+
+<p>Now you can use the compiler by writing <tt>dop-gcc</tt> where you would normally write <tt>gcc</tt>.
+
+<h3>Testing</h3>
+
+<p>Write a simple test file:
+
+<pre>
+#include &lt;stdio.h&gt;
+
+int main(int argc, char* argv)
+{
+  puts("Hello world!");
+  return 0;
+}
+</pre>
+
+<p>Now compile and run it:
+
+<pre>
+dop-gcc hello.c -O2 -o hello
+$DOP/simo/sim hello
+</pre>
+
+<p>If it worked, then good! If not, you could try fixing it and sending any corrections to me. I'd be very grateful.
+
+<h3>Congratulations</h3>
+
+<p>If you've made it this far, thank you and well done. I hope you find a use for this code.
+
+<p>A fair chunk of this work is based on guesswork and educated guesses at the "right" way of doing things. Sometimes I'm not too sure of the results (why can't Newlib find the params.h header file itself? Why is GCC so flaky?), so if you know better I'd like to hear your opinions.
+
+<hr>
+
+<i>&copy; <a href="mailto:brown@cs.bris.ac.uk">Julian Brown</a> 2003</i>
+
+</body>
+</html>

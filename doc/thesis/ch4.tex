@@ -1,0 +1,33 @@
+\chapter{Dynamic optimisation algorithm}
+
+\section{Profiling}
+
+Profiling is important, write about profiling here.
+
+Initially, we focus on inlining functions dynamically, then re-optimising the resulting code. It is very important that we do not affect the semantics of a block of code outside the ``window'' we are currently looking at it through. If it is a black box, we can squeeze it, but we cannot break it.
+
+\begin{itemize}
+\item Stitching blocks together
+\item Renumbering (as opposed to reallocating) registers
+\item Removing frame-specific code
+\end{itemize}
+
+It is generally easier to remove load instructions than store instructions. The latter we can only remove if it can be proved that a later store overwrites the same location before it is read again.
+
+\section{Deconstructing code}
+
+A piece of code can affect the state of registers, or store. It takes inputs from registers, immediate values and store. Build a forest of trees representing the required output for each register and memory location touched.
+
+Have enough information to decompile an entire program, complete with function names (but lacking variable names).
+
+\section{Register reallocation}
+
+\section{Basic optimisations}
+
+Constant propagation, constant folding, dead code removal, partially-dead code removal, common subexpression elimination.
+
+Must provide 
+
+\section{Automatic specialisation}
+
+Specialisation of binary code.

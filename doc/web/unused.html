@@ -1,0 +1,30 @@
+<h3>grr - random compiler</h3>
+
+<p>Aborted attempt to create a custom language for DOP. A bit like Java, but very underdeveloped. It (or something similar) might provide an interesting test-bed for language features to assist dynamic optimisation, but not in its current state.
+
+<p>If you want to play, try running the <tt>calc</tt> executable and pasting in:
+
+<pre>
+class foo
+{
+  int x;
+
+  method int foo() { return x*5; }
+
+  method int fact(int x)
+  {
+    if (x<2)
+      return 1;
+    else
+      return x*fact(x-1);
+  }
+}
+^D
+</pre>
+
+<p>If you're wondering, it is called "grr" because I was reading Andrew Appel's "Modern Compiler Implementation in ML", which describes a language called Tiger. And, as everyone knows, tigers go grr.
+
+<h3>tcc - tiny C compiler</h3>
+
+<p>Another aborted attempt, this time at porting Fabrice Bellard's very cool tcc compiler to the DOP architecture. It hadn't been successfully ported to an architecture other than its native x86 before, and I'm afraid this port doesn't really count either, since it doesn't work very well.
+

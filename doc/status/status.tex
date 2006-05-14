@@ -1,0 +1,106 @@
+% The master copy of this demo dissertation is held on my filespace
+% on the cl file serve (/homes/mr/teaching/demodissert/)
+
+% The copy on Thor is in /group/clteach/mr/demodissert
+
+\documentclass[12pt,twoside]{report}
+
+\usepackage{a4}
+\usepackage{verbatim}
+\usepackage{fancyhdr}
+\usepackage{ltxtable}
+\usepackage{amssymb}
+% \usepackage{palatino}                      % use times
+\usepackage{newcent}
+\renewcommand{\ttdefault}{cmtt}         % but don't use courier for typewriter
+
+\DeclareMathAlphabet{\mathsl}{OT1}{ppl}{m}{s}
+
+\usepackage{graphics}			% to allow postscript inclusions
+
+\input{epsf}				% to allow postscript inclusions
+% On thor and CUS read top of file:
+%     /opt/TeX/lib/texmf/tex/dvips/epsf.sty
+% On CL machines read:
+%     /usr/lib/tex/macros/dvips/epsf.tex
+
+
+
+\raggedbottom				% try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\addtolength{\oddsidemargin}{6mm}	% adjust margins
+\addtolength{\evensidemargin}{-8mm}
+
+\renewcommand{\baselinestretch}{1.1}	% adjust line spacing to make
+				    	% more readable
+
+\setlength{\parskip}{1.5ex}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\bibliographystyle{plain}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+% \pagestyle{empty}
+
+% \include{title}
+
+% \cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\setcounter{page}{1}
+\pagenumbering{roman}
+\pagestyle{plain}
+
+% \include{proforma}
+%\include{originality}
+
+% \listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\cleardoublepage	% just to make sure before the page numbering
+			% is changed
+
+\setcounter{page}{1}
+\pagenumbering{arabic}
+\pagestyle{headings}
+
+\include{ch1}
+\cleardoublepage
+
+\include{ch2}
+\cleardoublepage
+
+\include{ch3}
+\cleardoublepage
+
+\include{ch4}
+\cleardoublepage
+
+\include{ch5}
+\cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the bibliography
+
+% \addcontentsline{toc}{chapter}{Bibliography}
+% \bibliography{refs}
+% \cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+% \appendix
+
+\end{document}

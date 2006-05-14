@@ -1,0 +1,126 @@
+<html>
+<head>
+<title>Progress Report, September 2002</title>
+</head>
+<body>
+
+<center><h1>Progress Report, September 2002</h1></center>
+
+<h3>Information</h3>
+
+<p>I, Julian Brown, am approximately 24 months into my Ph.D.. I have been in the Languages and Architecture group for about 18 months. My supervisor is Prof. David May.
+
+<h3>Last six months</h3>
+
+<ul>
+<li>Identified areas for focus of optimisation work
+<li>Amended ISA to include notion of superblocks
+<li>Demonstrated working ELF toolchain (assembler, linker, simulator...)
+<li>Worked on retargeting GCC, Objective CAML
+<li>Developed profiling and optimisation strategy
+</ul>
+
+<h3>Next six months</h3>
+
+<ul>
+<li>Continue implementation of run-time optimiser
+<li>Research resource management for run-time system (processor time, memory)
+<li>Finish compiler ports
+<li>Start writing up thesis
+</ul>
+
+<h2>Architecture overview</h2>
+
+<h3>Basics</h3>
+
+<p>At runtime, the system is organised like this:
+
+<p><center><img src="runtime-overview.png"></center>
+
+<p><b>Application software</b> is made from instructions, which are grouped explicitly into basic blocks. Programs run directly on <b>hardware</b>, or talk to hardware through the operating system. The <b>operating system</b> is implemented using instructions formed into basic blocks, and also runs on hardware.
+
+<p>As program execution happens, a hardware <b>profiler</b> watches for common code usage patterns. If a certain trigger event happens (i.e., transition count from block X -> block Y exceeds a given threshold), then the <b>optimiser</b> is invoked. Optimisations are lightweight and incremental to avoid stalling the flow of execution too much.
+
+<p>Programs are compiled from source code in the normal way:
+
+<p><center><img src="compiling.png"></center>
+
+<p>Slightly more information than typical is propagated through this chain. The compiler performs some static analysis of code which helps the optimiser do a better job later on when code is being rewritten. The linker forms a global index of basic blocks (similar to a symbol table), which is necessary so that block locations can be resolved by the hardware during program execution.
+
+<h3>Instruction set</h3>
+
+<p>Instructions look like three-address code, like a typical RISC processor. ALU operations use two source registers and a third register for the result. There are 64 integer registers, and 64 floating-point registers. All typical operations are available. See previous reports for more detail. Some semantics have yet to be finalised, and probably won't be until more of the optimiser is written.
+
+<h2>Profiling</h2>
+
+<p>We need a method of profiling code execution which has very little, preferably zero overhead. Such a method is suggested below.
+
+<p>Profiling is performed using a piece of hardware I will call a <i>transition cache</i>. This counts transitions from one block to another. Speed is favoured over perfect counting. For blocks A and B we might have a hash function, for example:
+
+<p><center><tt>index = (ROR(A, 2) ^ B) & (table_size - 1)</tt></center>
+
+<p>This is used to find an entry in a table of the form:
+
+<p><pre>
++------+----+-------+
+| from | to | count |
++------+----+-------+
+</pre>
+
+<p>Then, if (A==from && B==to) count++; else from=A, to=B, count=0;. Or in words, if this transition is the same as the previous one which hashed to this location, we increment a counter, otherwise we throw away the previously-counted transition (maybe it doesn't happen very frequently) and start afresh.
+
+<p>This might cause degenerate behaviour too frequently. We might experiment with different table sizes, hash functions or a victim cache of some sort.
+
+
+<h2>Optimisation</h2>
+
+<h3>Value propagation</h3>
+
+<p>
+
+<h3>Block stitching</h3>
+
+<h3>Example: function inlining</h3>
+
+<h3>Rollback property</h3>
+
+<h3>Loop optimisations</h3>
+
+<h3>Memory optimisations</h3>
+
+<h3>Register renumbering</h3>
+
+<h3>Software pipelining</h3>
+
+<h3>Multiple versioning</h3>
+
+<h3>Instruction pattern matching</h3>
+
+
+<h2>Resource management</h2>
+
+If memory or processor time is used inefficiently, we will easily negate any possible benefit which dynamic optimisation might bring. This issue is more thorny than I anticipated - the run-time system must implement at the least some form of malloc/free system. But this may not be sufficient, since many code blocks must be created and destroyed very quickly, and fragmentation or leaking of memory is unacceptable.
+
+<p>The choices are, then: porting an existing malloc implementation, implementing a full garbage collection algorithm, or making do with a quick hack (eg fixed buffer with hard flush). I feel inclined to taking the latter option, at least to start with. The garbage-collection algorithms I've looked at so far look flaky and/or complicated. We do not want to be stopping program execution every five seconds to clean up our mess.
+
+
+<h2>Target codes</h2>
+
+<p>It is anticipated that a large amount of code will benefit from being executed on this architecture. Here are a few examples.
+
+<h3>Soft-float, user-defined and boxed types</h3>
+
+<p>Consider a software floating-point implementation on an embedded processor lacking the necessary hardware to do it directly. This is almost guaranteed to run slowly. Much of the effort involved in performing floating-point arithmetic on an integer-only processor is expended in unpacking and packing bits from each operand. Several floating-point operations in series may be packing data from registers into floating-point words, only to immediately unpack them again in the next library call.
+
+<p>It would be possible to implement each floating-point operation as a macro or inline function rather than function call. Our (static) compiler might then expand each calculation it sees and perform the necessary CSE to reduce the amount of wasted work to a minimum -- but then our code would be huge, and in an embedded environment that is unacceptable. But this is exactly the approach that a typical C++ programmer might use in this and many other situations.
+
+<p>I want my architecture to fix this. The soft-float example is probably too tricky, but something along the lines of "unboxing" complex arithmetic is probably doable.
+
+<h3>OpenGL</h3>
+
+<p>OpenGL typically calls lots of functions to set up polygons, lighting, transformations and so on. These functions are in shared libraries, which then interface hardware via device drivers. In a non-ideal situation, as is commonly encountered, there are more layers of abstraction involved, eg DRI, glide, which limit potential performance.
+
+<p>This is an interesting opportunity, since from this situation we could (hopefully) bypass not only the shared GL library, but also the device driver, so that in critical cases we might be writing directly to hardware registers on the graphics card from application software, whilst retaining compatibility across different hardware.
+
+</body>
+</html>

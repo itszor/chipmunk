@@ -1,0 +1,138 @@
+\chapter{Optimiser implementation}
+
+\section{Implementation}
+
+This section describes a ``snapshot'' of the state of the dynamic optimiser as it is at the moment and also some bits that are planned for the immediate future.
+
+Currently the profiler and the optimiser are implemented alongside a cycle emulator of a hypothetical DOP core with a simple three-stage pipeline (fetch, decode, execute).
+
+\subsection{Algorithmic complexity}
+
+To be useful, the optimiser must run very fast. A typical optimiser can take a large amount of time to get the best code possible, but we don't have that advantage.
+
+We will make the dynamic optimiser run fast in two ways. Firstly, we always manipulate only a small fraction of the total code at any one time. Secondly, we will try to restrict ourselves to algorithms which run in linear or near-linear time ($O(n \log n)$ is acceptable). If we develop good algorithms, the constant factor can then perhaps be hidden by extra support hardware, if necessary.
+
+\section{Symbolic instructions}
+
+The 32-bit instruction words are first decoded into an internal form (an Ocaml `tagged union' data type), so that it is easier to work with than raw bits. The fields of each instruction are split into the fields of the union, and there are approximately the same number and type of data constructors as there are variants of each instruction format. Some decoding is done here, so that immediate values and offsets in load/store instructions are represented in their logical rather than physical forms.
+
+This same internal form is used at the front-end of the dynamic optimiser, by a built-in disassembler and also by the pipeline simulator to execute instructions. For the last, the conversion is done during the decode phase of the pipeline, which seems somewhat fitting -- though the idea might not scale to a simulation of a larger implementation of the ISA.
+
+There is no real `need' for this internal representation (we could work with raw instructions in everything we use it for), but using an internal form such as this helps with respect to type safety, and hence eases the development of correct code. Once decoded, there is no way of mistaking a two-operand instruction for a three-operand instruction, or mistaking a destination register for a source register, and so on.
+
+\section{RTL}
+
+The optimiser does most of its work on a tree-structured register-transfer language. This form is both simpler and less heavily constrained than the symbolic instruction format described above. It is another Ocaml data type, defined like this:\footnote{It is called ast (abstract syntax tree) for historical reasons, but I should probably change it because there is no concrete `syntax' associated with it.}
+
+\begin{verbatim}
+type ast = Triop of op3 * ast * ast * ast
+         | Binop of op2 * ast * ast
+         | Unop of op1 * ast
+         | Nop of op0
+         | Move of ast * ast
+         | Constant of int32
+         | Register of reg
+         | Intpseudo of pseudo
+         | Floatconst of float
+         | Floatreg of reg
+         | Floatpseudo of pseudo
+         | Vector of int * ast list
+         | Pair of ast * ast
+         | Treg of ldtype
+         | MatchDomain of int
+         | Note of note * ast
+\end{verbatim}
+
+This format can refer to pseudo registers (temporaries), as well as the physical registers of the ISA, which allows more freedom during optimisation phases (eg, new temporaries can be created through common subexpression elimination or strength reduction). This places demands on a register allocator, as described in a following section (**).
+
+Translating to this form is done a basic block at a time, by substituting each symbolic instruction in the block with equivalent RTL. Some canonicalisation is done, so that for instance the subtract and reverse-subtract map to the same RTL, but with the operands reversed in the latter case.
+
+Normal (non-trapped) control-flow is separated from the body of the block, so a translated block consists of a list of RTL nodes and a type describing how the node exits: with a branch, a conditional branch, a call or a return, any of which can be direct or indirect via a register.
+
+After a block of RTL has been generated, a post-pass merges any \texttt{ldx}, \texttt{ldy} and \texttt{ldz} instructions with the following control-flow instruction, so the rest of the optimiser has direct access to complete immediate block references.
+
+See figure \ref{rtl} for a graph of RTL blocks.
+
+\begin{figure}[tmb]
+\centerline{\scalebox{0.4}{\epsfbox{rtl.ps}}}
+\caption{\label{rtl}RTL block graph with dominance frontier, after $\phi$-node insertion}
+\end{figure}
+
+\section{Profiling algorithm}
+
+Ideally, we want an algorithm which will tell us which sequence of basic blocks is likely to be executed many times in the future. This is not possible, so we will use the principles of spatial and temporal locality to make an assumption that sequences of blocks which were executed often in the past will probably be executed often in the future too.
+
+We cannot keep a trace of every block which is executed and find patterns in it, since to do so would need a prohibitively large amount of fast RAM and quite a lot of computing power in itself. One aim of this research is to determine what type of cheap profiling hardware will be beneficial in a system such as this.
+
+The profiling algorithms we will try first depend on two pieces of support hardware, a simple branch prediction unit and a transition profiler. The branch prediction unit is unusual in that it can be probed under software control by the optimisation system.
+
+The transition profiler watches for the transfer of control between pairs of blocks. If a transition happens more than a certain number of times, we can build a trace containing the two blocks and possibly more (depending on the types of control flow encountered), and trigger optimisations on the combined set of blocks.
+
+If we assume that our branch predictor works with 95\% success rate, then each time we encounter a conditional branch we can convert it into a \texttt{trap} and multiply a running total by 0.95. When the probability of a block executing falls below a certain threshold, we should stop building our trace.
+
+Unconditional branches and calls do not affect the probability of a block executing further, because they are always taken. Returns are assumed to have stack semantics, so as long as there is a dominator block containing a call, returns also do not affect the probability of block execution (if there is no associated call in the current block set, we should stop building our trace at a return).
+
+Our job is slightly different to that of a regular branch predictor. Some algorithms in current use depends on the outcome of the last few branches to choose between several branch prediction tables, or even different branch prediction algorithms. Such timely information is not so useful to us, since we are building code which is semi-static, by which I mean static for a certain number of iterations before it passes through the optimiser again. We need to see how mutable code and branch prediction can be made to work in harmony.
+
+There is no reason that a highly sophisticated branch predictor can be used independently of the optimiser, with a seperate, simpler or more suitable unit just for the latter's use. Such a piece of hardware might work as follows: we assume that some branches are more highly biased than others, and some will exhibit phased behaviour, depending on the point of program execution. We should be able to gather information from profiling conditional branches as well as block transitions (this is where the queryable branch predictor comes in). We could have, say, a 3-bit saturating counter which decrements on a false branch condition and increments on a true condition, with two additional bits signalling overflow and underflow. We can then use the state of the latter two bits to get a rough estimate of confidence that the current value of the counter represents a sensible measure of bias for this branch.
+
+Other algorithms are certainly possible, and will be examined. To save work in the long run, all optimisations which are developed should be robust enough to cope with arbitrary sets of basic blocks as input, including loops, complete function calls and complex control flow, so that wide-ranging profiling algorithms can be tried without fear of breaking the semantics of the code.
+
+\section{Trace generation}
+
+Whatever algorithm we use for profiling, we must build traces based on its outcome. We will call the blocks making up these traces the \emph{working set} of blocks. A trace is a set of RTL-converted basic blocks, which may have internal control flow (to the blocks in the working set) and external control flow, which returns control to parts of the program outside the current working set. A trace can cross the boundaries between program modules, and across static and shared libraries, potentially eliminating the overheads incurred through the use of such modular programming practices.
+
+Existing dynamic optimisation systems have obtained good results with variants on \emph{trace flattening}. Terms including trace formation, hot-cold optimisation and program layout are used for similar but slightly different techniques, by the authors of various different projects. The basic aims of these techniques are the same, to increase the utilisation of instruction caches and the scope for instruction-level parallelism in commonly-executed code, by bringing disparate code together into one contiguous region.
+
+To mimic this behaviour as a first experiment, we will use profile information from above to flatten a particular path through a given set of blocks into a single extended basic block. Conversion to SSA form (below) and further optimisation may yield partially-dead code, so each exceptional exit from the block (assumed to be taken infrequently) shall be connected to a corresponding empty \emph{dummy} block, which will in turn be connected to a single virtual block called \emph{exit}. This enables us to calculate block post-dominators, and also to insert any patch-up code necessary after optimisation of the hot path through the code, for example to massage register allocation state back to the expected conditions.
+
+Traces generated probably shouldn't include any code which hasn't already been executed at least once. We should be careful of situations where we would trigger any sort of scan over large amounts of irrelevant program code, in the process maybe even paging in parts of code from disk which aren't needed, and thus kill any performance gain we might have hoped for. So we are aiming to do global program optimisation, but on a local scale.
+
+\section{Conversion to SSA form}
+
+The initial conversion of symbolic instructions to RTL blocks leaves register names intact. To be able to safely manipulate the code, and optimise it with fast and simple algorithms, we will convert our RTL into static single-assignment (SSA) form, the benefits of which over more traditional variable-liveness structures are well-known.
+
+To do this we use the algorithm described in [Appel]. We calculate an immediate dominator tree using the Lengaur-Tarjan algorithm [Appel], calculate the dominance frontier and then insert $\phi$-nodes in the appropriate places. After this, registers are renamed by adding subscripts to them, such that each subscripted register is only assigned a value one time.
+
+At this stage, though we can still recover the physical register names, we are essentially dealing with \emph{variables} like a traditional compiler. If the range over which a subscripted register is live does not escape from the working set of blocks, the hardware register is was previously associated with does not matter, and thus can be substituted for another register without affecting program semantics.
+
+To make this clear to further passes, such registers are thus renamed at this point into \emph{pseudo registers}. It is currently unclear how aggressively this renaming should be done: it may be the case that inserting additional moves (between pseudo registers and architected registers) on the common path gives the register allocator (and other optimisation passes) more freedom, and we should rely on coalescing (copy propagation) to remove unnecessary moves again afterwards if necessary. With luck, such moves should be on the uncommon path through the code.
+
+Pseudo registers may be created by the above step, by optimisations such as common subexpression elimination, and by instruction selection. Since there are only a fixed number of registers, we now require a register allocation algorithm. We could reserve a fixed set of registers for this purpose, but that would not be a good solution since we hit problems as soon as we try to reoptimise an already-optimised block. However, we may be able to reserve a fixed set of registers and detach their logical to physical mapping, allowing them to rotate or work in a stack-like fashion -- this will not be attempted initially, though.
+
+Quite a lot of the time, particularly if we avoid aggressive optimisations, we can opportunistically borrow temporary registers from the lifetime holes of the registers used by a particular block. 
+
+Since we cannot safely spill registers to the normal stack, we will utilise a secondary stack, of \emph{optimiser-controlled memory}, only to be used when absolutely necessary (when register `borrowing' as above fails). We have reserved a register as a stack pointer into this space (\texttt{r59}), which must not be used by user code. If a block of reoptimised code requires or frees stack space, the amount will be recorded in the block's metadata.
+
+\section{Instruction selection}
+
+Instruction selection uses a tree-matching algorithm, which finds an optimum tiling of each RTL node using a dynamic programming algorithm [Appel]. An interesting programming technique is used for implementation here, allowing both \emph{rules} (tree tiles) and assembly-language instructions to be quoted directly in Ocaml source code as syntax extensions.
+
+The rules are converted at compile-time using Camlp4 (the Ocaml pre-processor-pretty-printer) into functions which build an environment containing mappings of registers or constants to names on success. The assembly-language instructions are converted into functions from an environment to symbolic instructions. Thus the majority of the instruction selection algorithm is written in easy-to-read meta code like this:
+
+\begin{verbatim}
+(1, <:rule< rd <- rm + rn >>, <:asm< add `rd,`rm,`rn >>);
+\end{verbatim}
+
+The first term is a numeric weight for this rule, the second is a rule (add \texttt{rm} to \texttt{rn}, put result in \texttt{rd}), the third is the DOP assembly-language equivalent of that rule. Rules can be arbitrarily complicated, and there can be multiple assembly-language instructions on the right-hand side. So for example:
+
+\begin{verbatim}
+(1, <:rule< rd <- (rd & 0x0000ffff) | eh#c >>,
+                                <:asm< mvc.h `rd,`#c >>);
+\end{verbatim}
+
+This more complicated rule describes the semantics of the \texttt{mvc.h} instruction from simpler bitwise AND and OR operations. A slight variation might fail to match, and thus would degrade to the constituent operations. There is one more interesting feature of instruction selection, which is that temporary creation is expressed in the same rule metalanguage:
+
+\begin{verbatim}
+(11, <:rule< tmp(rt) := rm % rn >>, <:asm< mod `rt,`rm,`rn >>);
+\end{verbatim}
+
+If this expensive rule matches (as part of a more complicated tree), a temporary will be generated, and this tree fragment will match as that temporary register as the child of the parent node.
+
+The purpose of having such a sophisticated instruction selection algorithm is that an arbitrary RTL tree can always be translated back into DOP instructions, without causing progressive worsening of code quality which could easily result from a poor instruction selection technique.
+
+\section{Register reallocation}
+
+Register allocation is done after instruction selection, and uses a variant on the linear scan algorithm of [LinearScan], which is suitable for SSA form [xx]. This algorithm is not yet implemented, but we do not anticipate major problems since we have manipulated the problem space to be practically identical to a `normal' compiler.
+
+The linear scan algorithm runs in linear time (hence the name). The SSA variant described in [xx] occasionally needs to backtrack, but still runs in (what?, O(n log n)?) time. In constrast, the common method of register allocation by graph colouring runs in quadratic time. It may be, however, that for small fragments of code the value of $n$ is small enough for this not to matter.

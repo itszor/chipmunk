@@ -1,0 +1,234 @@
+\chapter{Optimisations}
+
+\section{Framework}
+
+We have tried to create a robust framework in which we can manipulate code in tree form, whilst ensuring that we can always convert the result back into binary code and execute it successfully. The primary design aim for this part of the code was to ensure that code never gets \emph{worse}. This turns out to be rather tricky in itself, requiring algorithms for instruction selection which are at least as good as a production compiler.
+
+Now that is almost done, we can start to think about optimisations we can do within this framework -- hopefully, many of the things which are possible with a standard optimiser. Because we are using SSA form, we can implement many useful algorithms with low time complexity.
+
+\section{Passes}
+
+\subsection{Constant propagation}
+
+Constant values can be propagated through a single basic block with a simple forward pass (the purpose is to avoid repeatedly doing calculations at run-time which always yield the same results). We can assume that in many cases this optimisation will be done for us by the compiler.
+
+We might gain some additional benefit from constant propagation in our system for two reasons. Firstly some constants might not be known until link-time (for instance, the addresses of functions or global data). Secondly, some values might transpire to be constant due to the layout of rearranged code. The latter case leads to a simple form of specialisation, which will turn out to be particularly beneficial if branch conditions turn out to be constant.
+
+As an example, consider a hypothetical (nonsensical) function call:
+
+\begin{verbatim}
+_callsite:
+    mov r0, ~r3
+    mov r1, #15
+    mov r2, ~r4
+    call _foo, _continue
+
+_continue:
+    # rest of program
+
+_foo:
+    cmp.lt r3, ~r1, #7
+    cbr r3, _lessthanseven, _greaterorequal
+
+_lessthanseven:
+    # do something
+    ret
+
+_greaterorequal:
+    add r0,~r0,~r1
+    sub r0,~r0,~r2
+    ret
+\end{verbatim}
+
+Now the profiler notices that \texttt{callsite} jumps to the function \texttt{foo} very often. The condition inside \texttt{foo} is only dependent on the value of \texttt{r1}, which we know is constant in this case because it is loaded with an immediate value. Thus we can rewrite \texttt{callsite} to look something like this:
+
+\begin{verbatim}
+_callsite':
+    mvc.el r62,_continue
+    mvc.h r62,_continue
+    mov r0,~r3
+    mov r2,~r4
+    add r0,~r0,#15
+    add r0,~r0,~r2
+    ret
+\end{verbatim}
+
+Notice that we cannot fully remove the call instruction, since the return address (copied to \texttt{r62} by \texttt{call}) is used by the \texttt{ret} instruction. However, see section \ref{fninline} below.
+
+With operating system cooperation, we can also tell if a particular load comes from a read-only data section, and thus treat it in the same way as immediate-value loads.
+
+\subsection{\label{cprop}Copy propagation}
+
+The purpose of copy propagation is to remove redundant \texttt{mov} instructions. Taking the above example again, we can see that it is acceptable to rewrite the instruction stream like this:
+
+\begin{verbatim}
+_callsite':
+    mvc.el r62,_continue
+    mvc.h r62,_continue
+    add r0,~r3,#15
+    add r0,~r0,~r4
+    ret
+\end{verbatim}
+
+Notice how the variable liveness information allows us to do this \emph{safely}, even though we have not examined any code outside the `window' we are optimising. If the register expiry notes (\texttt{\textasciitilde}) were not present, we would not know that the values of \texttt{r3} and \texttt{r4} were not needed later, so removing the two \texttt{mov} instructions would not be safe.
+
+Note that, although these examples are written as if optimisations happen directly on binary code, they actually happen on the internal RTL representation.
+
+\subsection{Strength reduction}
+
+Again because of run-time constants, we might sometimes be able to replace some expensive operations (\texttt{mul}, \texttt{div}) with less-expensive operations (shifts and adds, reciprocal multiplication). For simple loops, it might also be possible to create new induction variables, although this will not be attempted in the first instance.
+
+\subsection{Dead-code elimination}
+
+Using the same example again, we can see that in this case the \texttt{lessthanseven} block is never executed, and has been removed from the specialised code. This optimisation (one type of \emph{fully}-dead code removal) has fallen out by itself.
+
+Another type of dead-code elimination, calculating values which are never used, falls out during conversion of RTL blocks to SSA form.
+
+\subsection{Partially-dead code elimination}
+
+To illustrate how partially-dead code elimination will work, we need a more complicated example. (Write the example).
+
+\subsection{\label{fninline}Function inlining}
+
+If our trace contains both a \texttt{call} and a \texttt{ret}, we can inline an entire function in one go. In section \ref{cprop}, we see a simple function where constant propagation could easily be used to eliminate the \texttt{ret} instruction and thus extend the trace beyond the function return.
+
+However many functions are more complicated, and contain prologue and epilogue code. There is a tradeoff here: it may be the case that it is not worth inlining a large function if the time taken to execute the call and return sequence is dwarfed by the time taken to execute the function body. On the other hand, we do not necessarily want to restrict function inlining to extremely simple `leaf' functions without any such prologue/epilogue pairs.
+
+We assume that if the \texttt{ret} instruction is being used, the function call obeys stack semantics (the functionally-equivalent \texttt{jump \textasciitilde{}r62} should be used instead if this is not the case). This does not mean that we have to understand the particular stack-manipulation code used by a given ABI, so that could be changed in the future or for the run-time of a language which is different to C.
+
+This being the case, consider the following example (output from GCC).
+
+\begin{verbatim}
+_writestring:
+    // locals=0 call_saved=12 outgoing_args=0
+    // pretend=0
+    sub r60,r60,#4
+    stm r60,@0~{r62-r61}
+    sub r60,r60,#8
+    stm r60,@0~{r4-r4}
+    mov r61,r60
+    mov r4,r0
+    call _strlen,_$cont66
+    _$cont66:
+    mov r3,~r0
+    mov r0,#0
+    mov r1,#2
+    mov r2,~r4
+    call __write_r,_$cont71
+    _$cont71:
+    ldm r60,@0{r4-r4}
+    add r60,r60,#4
+    ldm r60,@0{r61-r62}
+    add r60,r60,#8
+    ret
+
+_foo:
+    mvc.el r0, _string
+    mvc.h r0, _string
+    call _writestring, _cont
+    
+_cont:
+    mul r6,r7,r8
+    // rest of code...
+\end{verbatim}
+
+It is possible, though unlikely, that this entire function (and the two functions it calls, but we'll ignore those for now) are entirely contained within a single trace. We do not need to find all the places the function is called from; we integrate it at the call site, and we treat the call site as the dominator of the whole function. When we hit the final \texttt{ret} instruction then, we know that we are dominated by the \texttt{call}.
+
+The rewritten \texttt{foo} might now look like this:
+
+\begin{verbatim}
+_foo:
+    mvc.el r0, _string
+    mvc.h r0, _string
+    mov r62, r63
+    sub r60,r60,#4
+    stm r60,@0~{r62-r61}
+    sub r60,r60,#8
+    stm r60,@0~{r4-r4}
+    mov r61,r60
+    mov r4,r0
+    // rest of body of writestring
+    mov r2,~r4
+    call __write_r,_$cont71
+    _$cont71:
+    ldm r60,@0{r4-r4}
+    add r60,r60,#4
+    ldm r60,@0{r61-r62}
+    add r60,r60,#8
+    mul r6,r7,r8
+    // rest of code...
+\end{verbatim}
+
+This example doesn't admit too much extra optimisation, but serves to demonstrate how inlining will work.
+
+\subsection{Loop unrolling}
+
+The effectiveness of loop unrolling is probably limited without support for superscalar execution in the DOP simulator, but we can demonstrate how it could be done.
+
+The simplest way of doing it is probably to recognize commonly-executed blocks which end with a conditional branch, one arm of which points back to itself. More complicated loops can be found by finding the strongly-connected components in our program fragment. We'll take the simple case though for this example. In assembler notation (though again, this optimisation will really take place on RTL):
+
+\begin{verbatim}
+_loop:
+    // body
+    sub r1,~r1,#1
+    cbr r1, _loop, _exit
+
+_exit:
+    // rest of code
+\end{verbatim}
+
+We can now unroll this once like this:
+
+\begin{verbatim}
+_loop':
+    // body (1)
+    sub r1,~r1,#1
+    trapz r1, _exit
+    // body (2)
+    sub r1,~r1,#1
+    cbr r1, _loop', _exit
+
+_exit:
+    // rest of code
+\end{verbatim}
+
+For simple loops like this, it might be possible to recognize what the induction variable is (eg, \texttt{r1} here) and do more sophisticated loop transformations. Eg, we might be able to peel the loop and remove the trap:
+
+\begin{verbatim}
+    and r2,r1,#1
+    cbr r2,_loop',_loop''
+
+_loop':
+    // body (1)
+    // body (2)
+    sub r1,~r1,#2
+    cbr r1, _loop', _exit
+
+_loop'':
+    // body (1)
+    sub r1,~r1,#1
+    cbr r1, _loop', _exit
+
+_exit:
+    // rest of code
+\end{verbatim}
+
+In this case, the power of the RTL representation starts to become clear: in the \texttt{body (2)} expansion in \texttt{loop'}, we are able to substitute $r1-1$ for $r1$ (where $r1$ is a pseudo register, not the hardware \texttt{r1} register), and the semantics of the code will not be broken.
+
+\subsection{Load and store merging}
+
+I anticipate the possibility of being able to do two types of load and store merging. Firstly, multiple byte operations referencing successive locations might be replaced by halfword operations (and the same for halfword/word), when we can tell that the address is suitable. Secondly, multiple word load/stores from successive locations might be converted opportunistically into vector loads/stores.
+
+If this is undesirable for particular load or store instructions (eg, they are used for memory-mapped I/O operations), those instructions can be marked as volatile.
+
+Other instructions might be marked as non-temporal, which allows greater freedom in reordering memory accesses: for example, if it is known that reads from a memory area can be interleaved with writes to another memory area because those areas never overlap.
+
+\subsection{Speculative specialisation}
+
+The idea behind this optimisation is to find novel ways of specialising code by aggressively searching for run-time constants. This will require most of the features of DOP described so far. It could be done as follows. Firstly, notice (large) blocks of code which are executed frequently. Then, perhaps using some heuristic, insert a probe into the code to note register values on subsequent executions, and note in the block metadata what we have done.
+
+Now, run with the probe-enabled code for a while (probably a little slower than before). Then, re-invoke the optimiser if a particular register always appears to have the same value for some number of subsequent executions. If we find that it does, rewrite the code (with a guard in case our assumption is wrong!) with the register replaced by a constant. If it doesn't, note that fact in the metadata so we don't bother trying again.
+
+Where the heuristic comes in is in determining which registers would be good to look for being constant initially. Say the best results would come from removing conditional branches; then we might be able to trace back from the register controlling the conditional branch to the start of the block.
+
+This is all obviously quite speculative (excuse the pun), but I'm sure there's something worth investigating there...

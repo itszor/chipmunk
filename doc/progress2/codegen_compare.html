@@ -1,0 +1,132 @@
+<html>
+<head><title>Code Generator Comparison</title>
+</head>
+<body>
+
+<h1>GCC</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>Mature, reasonable optimisation, ported to many architectures already
+<li>Multiple front-ends
+<li>Local expertise available
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Complicated. Porting to a new architecture, especially a 'weird' one, would take months.
+<li>Throws away too much information too soon
+</ul>
+
+<h3>Actually...</h3>
+
+<p>On closer inspection, the intermediate rep looks about right.
+
+<h1>MLRISC</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>Probably fairly clean, produces reasonable code, already retargeted
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Written in SML, which is not a Real Language
+<li>Ill-documented
+</ul>
+
+<h1>SUIF/Machine SUIF</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>Designed exactly for this sort of thing
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Complicated
+<li>Not investigated much really...
+</ul>
+
+<h1>Ocaml</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>Already retargeted
+<li>Second only to GCC (C) in independent tests for speed
+<li>Modern language
+<li>Under active development
+<li>A language like Ocaml probably avoids C's problems with pointer arithmetic/memory aliasing, etc.
+<li>Garbage collection ideas might fit together nicely
+<li>Theory/practice gained from currying. Immutable data.
+<li>Imperative as well as functional programming style supported
+<li>Kudos
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Written in Ocaml. Not <i>necessarily</i> a problem, but could complicate matters.
+<li>Frontend specific to Ocaml, so restricted to a fairly obscure language.
+<li>Too much specialisation of architecture to the functional style of language might render it useless for imperative programming
+<li>Boxing of data might distribute memory operations in a non-typical way
+<li>Parts of runtime are written in C and assembler. No thanks...
+</ul>
+
+<h1>LCC</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>There's a whole book about it
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>The book apparently isn't very good
+<li>Same problem as GCC re: intermediate representation, in that it probably throws away too much information too soon
+</ul>
+
+<h1>VPO</h1>
+
+<p>"Very Portable Optimiser".
+
+<h3>Pros</h3>
+<ul>
+<li>Uses a single low-level intermediate form.
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Ill-documented
+<li>Err, does this even do anything like what I want it to?
+</ul>
+
+<h1>C--</h1>
+
+<h3>Pros</h3>
+<ul>
+<li>Quite a good idea, should allow for different front-ends for different languages
+<li>QC-- looks reasonable...
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Implemented on top of MLRISC anyway (except QC--)
+<li>Very much work-in-progress, doesn't really look ready for use outside their own projects
+</ul>
+
+<h1>TenDRA/ANDF</h1>
+
+<h3></h3>
+<ul>
+<li>Already ported to many architectures. Adding another one shouldn't be too difficult.
+</ul>
+
+<h3>Cons</h3>
+<ul>
+<li>Discontinued. Possibly buggy, etc.
+<li>There may be issues with complexity or unsuitability of intermediate representation.
+<li>"Two-stage" compilation might produce less good code, especially since portability is the main target of this system.
+</ul>
+
+</body>
+</html>

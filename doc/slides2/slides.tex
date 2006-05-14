@@ -1,0 +1,276 @@
+\documentclass[fancybox]{seminar}
+
+\usepackage{semcolor}
+\input{seminar.bug}
+\usepackage{pstcol}
+\usepackage{pst-grad}
+\usepackage{slidesec}
+\usepackage{fancybox}
+
+
+\newenvironment{code}
+  {\begin{list}{}{
+    \setlength{\rightmargin}{\leftmargin}
+    \raggedright
+    \setlength{\itemsep}{0pt}
+    \setlength{\parsep}{0pt}
+    \ttfamily}%
+   \item[]}
+  {\end{list}}
+
+\newcommand{\heading}[1]{%
+  \begin{center}
+    \Ovalbox{\large\bf #1}
+  \end{center}
+  \vspace{1ex minus 1ex}}
+
+\definecolor{Gold}{rgb}{1.,0.84,0.}
+\slideframe{scplain}
+
+\begin{document}
+
+\begin{slide}
+
+\heading{What I'm doing}
+
+\begin{itemize}
+\item Research into {\em dynamic optimisation}
+\item In particular, support features in an instruction-set
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{What is dynamic optimisation?}
+
+\begin{itemize}
+\item Try to improve code as it is running
+\item Use continuously-gathered profile data
+\item Normally perform optimisations in the absence of source code
+\item No need for additional compilation stage
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{New/improved work in field}
+
+\begin{itemize}
+\item HP Dynamo
+\item MS Research Mojo
+\item Wiggins/Redstone
+\item Deco
+\item (P4 trace cache)
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{HP Dynamo}
+
+\begin{itemize}
+\item Ported to new architectures (SH4, ARM, x86) and operating systems (Linux, Windows CE)
+\item Aiming for embedded applications
+\item Pre-emptive cache flushing
+\item Low footprint
+\item Not much info available on newer versions
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{MS Research Mojo}
+
+\begin{itemize}
+\item Aims to optimise large, multi-threaded Windows applications
+\item Initial results disappointing
+\item Attempted use of x86 arch a problem?
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Wiggins/Redstone}
+
+\begin{itemize}
+\item Gathers data values as well as program flow
+\item Specialises binary code
+\item Generates traces long enough to insert prefetch instructions
+\item Seemed to obtain good results with POV-ray renderer
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Common themes}
+
+\begin{itemize}
+\item ``Hot'' trace flattening
+\item Copy propagation
+\item Partial dead code removal
+\item Load-store alias detection
+\item Load-verify
+\item Prefetch insertion
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Assorted architecture features}
+
+\begin{itemize}
+\item Based around superblocks rather than flat code or basic blocks (as previously)
+\item Memory access tags
+\item Basic type information
+\item User-space memory protection
+\item Continuous profiling in hardware
+\item Old features (register expiration, etc.)
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Superblocks}
+
+\begin{itemize}
+\item Code arranged as sequences with:
+  \begin{itemize}
+  \item One entry point
+  \item Multiple exit points
+  \item No internal branches
+  \end{itemize}
+\item Allow contiguous ``hot'' regions to be formed
+\item All code pointers dereferenced
+\item Previous arrangement broke instruction caching
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Memory access tags}
+
+\begin{itemize}
+\item Indication of how program can be safely altered
+\item Might occupy 2 bits per access instruction
+\item Can indicate, eg, if a store must be performed to preserve semantics of program
+\item Probably useful for:
+  \begin{itemize}
+  \item Register reallocation
+  \item Safely removing stack frame code
+  \item Alias detection
+  \end{itemize}
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Type information}
+
+\begin{itemize}
+\item Store at suitable points in program
+\item Might be fairly crude, eg:
+  \begin{itemize}
+  \item Scalar
+  \item Pointer to area of particular size
+  \item Something ``more complicated''
+  \end{itemize}
+\item Need to hijack {\tt malloc}, etc.?
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Fine-grained memory protection}
+
+\begin{itemize}
+\item Small number of write-protected areas
+\item User-space fault handler
+\item Use to optimistically special-case loops with possible aliases
+  \begin{itemize}
+  \item Allows aggressive reordering of loads and stores
+  \item Only done if a loop is time-consuming
+  \end{itemize}
+\item Combine with memory access tags \& type information
+\item General applicability?
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Example}
+
+\begin{code}
+void vsum(float a[], float b[], float c[], \\
+\ \ \ \ \ \ \ \ \ \ int size)\\
+\{\\
+\ \ int i;\\
+\ \ for (i=0; i < size; i++)\\
+\ \ \ \ a[i] = b[i] + c[i];\\
+\}\\
+
+float vec[100];\\
+vec[0] = vec[1] = 1.0;\\
+vsum(\&vec[2], \&vec[0], \&vec[1], 97);
+\end{code}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Continuous profiling}
+
+\begin{itemize}
+\item Most time-consuming part of current dynamic optimisation systems
+\item Need to look for ways to do accurately and efficiently
+\item The right hardware-based approach could probably be pipelined
+\item ``Level of detail'' profiling?
+\end{itemize}
+
+\end{slide}
+
+
+\begin{slide}
+
+\heading{Speeding up interpreters}
+
+\begin{itemize}
+\item Lots of programs based around a bytecode-interpreting core
+\item Tend to run slowly (Python, non-JIT Java, Perl...)
+\item Look for a way of exploiting pattern
+  \begin{itemize}
+  \item Big {\tt switch} statement
+  \item Each case may contain function calls, etc. (Python)
+  \end{itemize}
+\item Will Wiggins/Redstone approach do by itself?
+\item Lexing, etc. hopefully similar enough to also benefit
+\end{itemize}
+
+\end{slide}
+
+
+\end{document}

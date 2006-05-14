@@ -1,0 +1,15 @@
+\chapter{Introduction}
+
+Those working on compiler optimisation often group code together into two main classes. Scientific code is typically formed from loops which are run repeatedly in a highly predictable pattern, whereas user-interface and many other types of code follow much more chaotic execution paths. The former type of code is often referred to as ``loopy'' code, the latter ``branchy''. Loopy code has traditionally been the subject of the bulk of compiler optimisation work. We are concentrating mainly on branchy code, particularly of the style where the code is long-running and contains many method calls and calls through multiple layers of shared libraries. This type of code is expected to benefit the most from the dynamic optimisation techniques described in this paper.
+
+Our interest in dynamic optimisation stems from previous work in binary code translation, and by noticing how ``the fastest code'' is not always possible to determine statically. Sometimes the fastest code is not even constant during the execution of a program. This has been described as {\em phased behaviour} in \cite{WigginsRedstone}. The problem which we aim to solve is that a compiler generally does not know where a program spends most of its time during execution. Profile-directed optimisation goes some way towards alleviating this problem, at the expense of a fiddly extra execution/recompilation phase, the necessity of acquiring a corpus of ``typical data'', and the lack of responsivity to phased behaviour.
+
+\section{Motivation}
+
+We show
+
+\section{Background}
+
+\section{Experimental methodology}
+
+\section{Foo}

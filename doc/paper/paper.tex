@@ -1,0 +1,334 @@
+% The master copy of this demo dissertation is held on my filespace
+% on the cl file serve (/homes/mr/teaching/demodissert/)
+
+% The copy on Thor is in /group/clteach/mr/demodissert
+
+\documentclass[11pt,letterpaper,twocolumn,notitlepage]{article}
+
+\setlength{\columnsep}{8mm}
+
+\usepackage{verbatim}
+% \usepackage{fancyhdr}
+\usepackage{ltxtable}
+\usepackage{amssymb}
+\usepackage{doublespace}
+\usepackage{hyperref}
+\usepackage{times}                      % use times
+% \renewcommand{\ttdefault}{cmtt}         % but don't use courier for typewriter
+
+\DeclareMathAlphabet{\mathsl}{OT1}{ppl}{m}{s}
+
+\usepackage{graphics}			% to allow postscript inclusions
+
+\input{epsf}				% to allow postscript inclusions
+% On thor and CUS read top of file:
+%     /opt/TeX/lib/texmf/tex/dvips/epsf.sty
+% On CL machines read:
+%     /usr/lib/tex/macros/dvips/epsf.tex
+
+
+
+\raggedbottom				% try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\addtolength{\oddsidemargin}{6mm}	% adjust margins
+\addtolength{\evensidemargin}{-8mm}
+
+\renewcommand{\baselinestretch}{1.5}	% doublespace
+
+\setlength{\parskip}{1.5ex}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\title{DOP -- An architecture for dynamic optimisation}
+\author{Julian Brown (brown@cs.bris.ac.uk)\\Henk Muller (henkm@cs.bris.ac.uk)}
+\maketitle
+
+\bibliographystyle{plain}
+
+
+\newenvironment{code}
+  {\begin{list}{}{
+    \setlength{\rightmargin}{\leftmargin}
+    \raggedright
+    \setlength{\itemsep}{0pt}
+    \setlength{\parsep}{0pt}
+    \ttfamily}%
+   \item[]}
+  {\end{list}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+% \pagestyle{empty}
+
+% \include{title}
+
+% \cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+% \include{proforma}
+%\include{originality}
+
+% \listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\cleardoublepage	% just to make sure before the page numbering
+			% is changed
+
+%\setcounter{page}{1}
+%\pagenumbering{arabic}
+%\pagestyle{headings}
+
+
+\begin{abstract}
+In this paper we present a novel architecture geared towards run-time optimisation of binary code. We have created a processor core, simulation environment and development tools which are designed to make run-time analysis and reoptimisation of code easy, without impacting its execution performance. We describe the features we have implemented, with justifications for why we believe them to be useful. Our architecture has the potential to move the field of dynamic optimisation greatly forward.
+\end{abstract}
+
+\section{Introduction}
+
+Those working on compiler optimisation often group code together into two main classes. Scientific code is typically formed from loops which are run repeatedly in a highly predictable pattern, whereas user-interface and many other types of code follow much more chaotic execution paths. The former type of code is often referred to as ``loopy'' code, the latter ``branchy''. Loopy code has traditionally been the subject of the bulk of compiler optimisation work. We are concentrating mainly on branchy code, particularly of the style where the code is long-running and contains many method calls and calls through multiple layers of shared libraries. This type of code is expected to benefit the most from the dynamic optimisation techniques described in this paper.
+
+Our interest in dynamic optimisation stems from previous work in binary code translation, and by noticing how ``the fastest code'' is not always possible to determine statically. Sometimes the fastest code is not even constant during the execution of a program. This has been described as {\em phased behaviour} in \cite{WigginsRedstone}. The problem which we aim to solve is that a compiler generally does not know where a program spends most of its time during execution. Profile-directed optimisation goes some way towards alleviating this problem, at the expense of a fiddly extra execution/recompilation phase, the necessity of acquiring a corpus of ``typical data'', and the lack of responsivity to phased behaviour.
+
+\section{Background}
+
+We were particularly interested in how the commercial processors from Transmeta \cite{Transmeta} seemed to be held back by the use of the x86 instruction-set architecture. The Crusoe and successors are processors which are internally VLIW, but expose an interface through software which makes them appear as legacy x86 devices. Transmeta's original aim was to extract higher performance using their product than a typical modern superscalar x86 processor core, whilst simultaneously using less silicon resources. As it turned out, the chips were not as high-performance as was hoped, and were marketed instead for their lower power consumption than typical x86 chips.
+
+At the time this research was started, there were already several dynamic optimisation systems in existence \cite{Dynamo,Mojo}, and several other tangentially related projects \cite{Spike,WigginsRedstone}. Additionally, significant inspiration was taken from a large number of dynamic binary translation projects \cite{Dixie,Embra,Deco,Etch,UQBT,Executor,Shade,armphetamine}.
+
+We attempted to factor out the techniques and pitfalls common between these projects, and come up with our own solutions. It was decided that a novel architecture would allow the greatest freedom in experimenting with ISA and profiling ideas. Our architecture is specifically designed to be easily analysable, so overheads and complications of reoptimising code are minimised. Additionally, we are able to experiment with profiling in hardware, to alleviate the (traditionally large) overhead of software profiling in this type of system \cite{Dynamo,Mojo}. We included bitfield instructions in the ISA to make it more suitable for decoding itself.
+
+\section{Architecture overview}
+
+\subsection{Code versus data and modifiable code}
+
+Before we describe how code is represented in DOP, we will take a short excursion through the world of virtual machines, to highlight the problems a dynamic optimisation system will have in successfully modifying binary code.
+
+By a {\em virtual machine} we are referring in particular to a class of systems which emulate a distinct environment for program execution inside another, which we will call a host. Examples might include PC emulation software for Unix workstations, where a virtual processor written in software is used instead of the real processor, allowing a different ISA to be utilised. We are not talking in particular about ``big iron'' systems which can run tens or hundreds of virtual machines through hardware partitioning.
+
+A na\"ive implementation of such a virtual machine will contain at its core a virtual CPU, which will read, decode and execute (interpret) each instruction from the current program-counter location. Because most (in the dynamic sense) code is executed many times, this becomes very inefficient because the decoding (which is typically a slow operation) must be done again and again for exactly the same code. The usual solution to this problem is to group instructions together, and cache them in some form. This can be done at various levels, from caching the results of decoding instructions in a data structure up to translating entire traces into native code and branching to those translations in the interpreter instead of interpreting the equivalent code.
+
+In the latter case, we must build a function from virtual addresses to the host addresses of translated code fragments. This mapping table is also present in some form in nearly all of the existing binary translation systems, and is a source of much inefficiency. Occasionally it is possible to patch addresses in translated/optimised fragments to refer to previously translated fragments, but vitally it is not possible to do so for all addresses.
+
+It is important to notice at this point that a dynamic optimisation system suffers from the same problem. We are making the assumption that any such system will work by replacing fragments of binary code with equivalent, faster code. The faster code obviously can not go back into the same place, because it is quite likely that it will not fit, and besides, there may still be branches into the middle of the code which we do not know about. We cannot know every part of the program which might branch to a particular address.
+
+The reason why is quite straightforward. A given piece of code might calculate an address through arbitrary arithmetic and branch to it. If the code at that address has been translated or optimised, we can only know that by looking up the mapping from the original address to the new address. To rewrite the arbitrary arithmetic to magically calculate the new code address would be equivalent to the halting problem.
+
+\subsection{Control flow}
+
+In the DOP architecture, all code is represented as (extended) basic blocks. These blocks have addresses, but there is no way of affecting the program counter directly and no way of branching into the middle of a block.
+
+All control flow is indirected through a table (figure \ref{indir-1}). This lends a straightforward way of replacing a block of code with another, by simply changing the entry in the table to point to the new block (figure \ref{indir-2}). Optimised fragments of code can be discarded at a later time because we create a new entry in the table pointing at the old code and linking it to the old entry (referencing the new code), forming a list. If the new fragment is deleted, the new table entry is replaced with the old one and the redundant table entry is removed.
+
+\begin{figure}[t]
+\centerline{\epsfbox{indirect-1.eps}}
+\caption{\label{indir-1}Indirection}
+\end{figure}
+
+\begin{figure}[t]
+\centerline{\epsfbox{indirect-2.eps}}
+\caption{\label{indir-2}Replacing a block}
+\end{figure}
+
+This technique goes a long way towards making the architecture more suitable for hosting a dynamic optimisation system. The index may also be used to hold profiling information, and is likely to be complemented with a special-purpose cache in a silicon implementation of DOP, to minimise the overhead of the indirection which must be performed on each branch. There is no reason that branch prediction cannot be utilised with this type of processor like any other, which could bypass the indirection step altogether when its predictions are correct.
+
+\subsection{Instruction set}
+
+The DOP instruction set is based on ideas from several existing RISC-like architectures, but simplified and extended to make it easier to analyse and produce code in rapidly.
+
+There are 64 general-purpose integer registers, and 64 double-precision floating-point registers. The set of operations available is fairly predictable: addition, subtraction, multiplication, division, bitwise logical instructions, and so on. We have not attempted to reduce the number of instructions in the cases where, to do so, the meaning of code might be obscured in a way which would make analysis more complicated. In this sense our tuning strategy is slightly different from a traditional RISC-style processor, although the results have come out fairly similar.
+
+Arithmetic instructions have one destination register and two source registers, or a destination register, a source register and an immediate. Unary operations omit the first source register. No instructions cause side effects, simplifying translation to AST form greatly (see below).
+
+\subsection{Condition codes}
+
+We have avoided the temptation to use condition codes or predicate registers. There are comparison instructions to compare pairs of values (a register and a register, or a register and an immediate), the result of which are written into a general-purpose integer register: $-1$ if true, $0$ if false.
+
+\subsection{Control flow}
+
+Control flow is done via normal integer registers. The conditional-branch instruction ({\tt cbr}) takes an integer register and two block references as arguments -- the true and false arms. If the register is non-zero, the true arm is followed (indirected through the table), else the false arm is taken. The block references may be either immediates or registers. Take note that conditional branches are two-way, they never fall-through to the following instruction. This is, again, because of issues with replacing fragments of code. All DOP code is completely relocatable.
+
+There are four types of control flow instruction. The {\tt cbr} instruction, and also a {\tt jump} instruction which makes an unconditional branch to a new block. The {\tt call} instruction used to invoke subroutines is slightly unusual, in that it takes as an argument not only the block to transfer control to immediately, but also a block to return to once the subroutine has completed. The return block reference is copied into a link register ({\tt r62}) when the instruction is executed.
+
+The final type of control-flow instruction is {\tt ret}, which is used to return from subroutines. Its action is the same as a {\tt jump} instruction specifying {\tt r62} as its destination, but when the {\tt ret} instruction is used the function should be guaranteed to obey {\em stack discipline} and return to the caller, which will be important for some times of optimisation, notably function inlining. If another programming style is being used, for example coroutines, the alternative {\tt jump} encoding can be used and no assumptions will be made about stack discipline.
+
+\subsection{Register liveness}
+
+DOP contains one more novel feature, which is that register liveness information is embedded into the encodings of instructions. In each place a register is specified as a source operand, it can optionally be labelled as {\em expiring} after that location, which means that it is not referred to again as a source operand until after it has been resurrected by being used as a destination operand. Attempting to use a dead register causes an invalid instruction exception to be raised.
+
+Full-program analysis could also yield a subset of this register-liveness information, by performing a backward pass over the set of blocks. We avoid doing this because it is anticipated that we will be examining the whole program through a very small window of perhaps two or three blocks at a time. Knowing that a register value will not be used again beyond a given point is information that can be easily extracted from a compiler during code generation, and greatly increases code malleability.
+
+If, for instance, we know that the register {\tt r3} is not used beyond the fragment shown in figure \ref{codefrag}, we can rewrite the corresponding AST for the code as shown in figure \ref{splice}. The use of {\tt r3} now becomes a ``don't care'' issue -- we could equally well use any other register which was free at that point without affecting program semantics.
+
+\begin{figure}[t]
+
+\begin{code}
+add r3,r2,r1\\
+add r4,\~r3,\#4
+\end{code}
+
+\caption{\label{codefrag}A simple code fragment with register expiry}
+\end{figure}
+
+\begin{figure*}[t]
+\centerline{\epsfbox{treegrow.eps}}
+\caption{\label{splice}Splicing two trees}
+\end{figure*}
+
+\subsection{Traps}
+
+There is another way which control can pass out of a block -- {\tt trap} instructions. These instructions are a fused compare and one-armed branch, and are used to test a condition (which should only occur very infrequently), branching to another block if that condition is true and continuing execution of the containing block if it is false. These instructions should not generally be emitted by a compiler back-end. The conditional-branch instructions should be used in preference.
+
+Traps are primarily for use in flattened traces output from the optimiser, in the (presumed infrequent) cases where execution should have followed a different path.
+
+\section{Assembler}
+
+We will now dicuss the toolchain required to produce binaries for DOP. At the start of the chain is the assembler. The DOP assembly language, perhaps unusually, has a LALR grammar, and is implemented with the standard tools {\tt flex} and {\tt bison}. The assembler does the job of hiding most of the implementation details behind code indirection and its organisation into basic blocks. Thus it appears to the compiler as an assembler with a fairly standard syntax. This is possible because the compiler outputs symbolic references to labels, which can be substituted with indirect references rather than absolute or relative addresses at assembly time.
+
+As code is assembled, it is grouped together into basic blocks, and each block is named with the preceding label. If a block does not end with a control-flow instruction before the following label, a {\tt jump} instruction to the following block is explicitly inserted at the end of the block. This adds to the illusion that DOP code is formed from individual instructions not basic blocks, which eases the implementation of the compiler.
+
+The assembler outputs little-endian ELF object files. These files are of a comparable size to those of a regular RISC ISA compiled with debugging information.
+
+\section{Linker}
+
+The linker is capable of reading object files and building and writing an executable image in ELF format. It is also responsible for building an index of the blocks which are included in the final image, so that each of those blocks has a unique index entry. Relocation is performed so that local and global references in object files point to their corresponding index entry, not the address of the code itself. A section containing the names of each block (extracted from the original assembly files) is also created, which is useful for debugging the simulator and optimiser.
+
+\section{Porting GCC}
+
+We have retargeted the GCC compiler to the DOP architecture, so that we can build executables from C source code to exercise the dynamic optimisation system.
+
+Porting the compiler to an unusual architecture was not as much of a problem as had been anticipated, at least from the point of view of the bits which are ``weird''. The major problems were much the same as the major problems porting GCC to any architecture -- not least that it is a large, complicated piece of software with inadequate documentation.
+
+Register expiry information is easy to extract from GCC by examining the {\tt REG\_DEAD} notes supplied in its intermediate language RTL during code generation.
+
+Because of the other architectures without condition codes which GCC has already been ported to (Alpha and others), it turns out to be remarkably good at synthesizing ``long long'' arithmetic for DOP using various clever bit-mangling tricks. Those types of operations were our last reservation about removing condition codes (carry-out) {\em and} any form of extended addition instruction entirely from the architecture, so it seems that decision was vindicated.
+
+\section{Simulator}
+
+The simulator for the DOP architecture contains only the processor core, which is realised for now using a virtual 3-stage pipeline, and rudimentary ``faked'' operating system services (to stop the simulator) and hardware (a serial port). It is mainly mentioned here to discuss its relationship with the optimiser described below.
+
+There is no way that each of the separate components (GCC, simulator, optimiser) can be created and debugged simultaneously. For pragmatic reasons, thus, the optimiser runs on the host machine rather than the simulated one, and the simulator and optimiser communicate via a Unix socket. In this way we build a {\em model} of the system, rather than the system itself. A concrete implementation can come later once our algorithms have been proven.
+
+A ``real'' implementation in silicon, by constrast, could use any of the following techniques for the optimiser, based on the relative resource costs of each:
+
+\begin{itemize}
+\item An operating system service, administering multiple applications
+\item A low-level sub-OS service, controlled by hardware interrupts and invisible to OS-level code (the Transmeta approach)
+\item A piece of dedicated hardware running in parallel to the CPU
+\end{itemize}
+
+The last technique in particular can be modelled by delaying the insertion of code back into the running system until after a period of time in which the simulated CPU runs in parallel with the optimisation algorithm. Once the optimisation is complete, the modified code can be patched back into the running system. The delay can be the real time taken for optimisation, multiplied by a factor representing the amount of resources dedicated to optimisation in the final system. This may turn out to be the most effective way of performing dynamic optimisation, but care must be taken to avoid any race conditions.
+
+\section{Profiling}
+
+Profiling will be performed continuously on running code, to identify hotspots and extract traces of commonly executed code. The aim is to gather traces (sequences of blocks) which are likely to be executed again soon, and to pass those traces to the optimiser for improvement before substituting them into the original code.
+
+As we have a ``clean slate'', and profiling is typically the heaviest drain on system resources for dynamic optimisation systems \cite{Dynamo,Mojo}, we will perform profiling in hardware in parallel to code execution.
+
+Several algorithms for profiling code will be tested. One such algorithm may use a table to count transitions between blocks, where crossing a threshold will trigger the optimisation system. This will then run either in parallel with normal code execution, or in another way as described above.
+
+It is more than likely that several different techniques used in combination will give the best results for profiling. Much work has been done on branch prediction, and very powerful methods have been discovered. Something as simple as combining branch prediction with execution counts for each block may yield very good results.
+
+We will also build the profiler so that it is capable of detecting register values which are constant over multiple invocations of commonly executed blocks. This information can then be used by the optimiser to produce specialised versions of those blocks (with appropriate guards to ensure correctness), which may offer significant performance improvements.
+
+\section{Optimiser}
+
+\subsection{Abstraction}
+
+The first stage in the optimiser is converting binary code into a more malleable representation. In the current model implementation, this is represented by an ML datatype which looks very much like the abstract syntax tree (henceforth AST) of a traditional compiler.
+
+This conversion is done in two steps. Firstly, the 32-bit instruction encoding is converted one-to-one into a decoded form (another ML datatype) which is easier to manipulate than raw bits. This form is then translated into the AST datatype, one-to-many for most instructions. The AST is more expressive than flat binary code, and does not suffer from the problems of encoding instructions into a fixed-size format, for example limited-range immediate fields. As such, this phase is pretty straightforward. The translation does not attempt to do any ``clever tricks'' by itself to improve translated code -- those come later.
+
+Certain instructions are translated into combinations of simpler primitive AST nodes, but not to an extent where translating them back into physical code is more difficult because of it. For example, multi-word transfers are part of the DOP instruction set, so these have corresponding AST codes describing them directly, rather than being split into a sequence of single-word transfers which could perhaps become separated and difficult to coagulate back into multi-word transfers.
+
+\subsection{Canonicalisation and optimisation}
+
+With the code for a block (or set of blocks) under scrutiny in the form of ASTs, we can perform several of the typical optimisations performed by a traditional compiler. These include arithmetic simplification, copy propagation, common subexpression elimination, constant propagation, and so on.
+
+Figure \ref{uncond} shows how a commonly-executed unconditional branch between two blocks might be flattened into a single block, then reoptimised.
+
+\begin{figure}[t]
+\centerline{\epsfbox{stitch1-3.eps}}
+\caption{\label{uncond}Stitching unconditional branch}
+\end{figure}
+
+An unconditional branch from a block X which usually jumps to a block Y, and very infrequently to a block Z, might be transformed as in figure \ref{cond}. Notice that a trap (shown stippled) has been inserted into the middle of the new block, and that fixup code may be needed to repair the state before Z is executed.
+
+\begin{figure}[t]
+\centerline{\epsfbox{stitch1-2.eps}}
+\caption{\label{cond}Stitching conditional branch}
+\end{figure}
+
+A more complex example (figure \ref{inline}) demonstrates progressive inlining of a function containing a simple condition. The top-left diagram represents a call site A which returns to B, and a function CDEF. The bottom-right diagram represents, after a series of successive transformations, the common path through the function ACDFB, which may execute infrequently as ACEFB.
+
+\begin{figure*}[t]
+\centerline{\epsfbox{inline.eps}}
+\caption{\label{inline}Progressively inlining function}
+\end{figure*}
+
+\subsection{Limitations}
+
+Although all optimisations we attempt must be conservative, we can extend the scope of what is considered conservative by using annotations in binary code. An example of this is the use of register-expiry tags as described above. Another example is the colouring of known-volatile memory accesses to ensure they are never removed.
+
+The only available scratch space for reoptimised code is the set of ``spare'' integer and floating-point registers which are unused during the execution of a block. We cannot gain more scratch space by reallocating the stack, because we should not assume a particular stack model is being used by our compilers. There should be no reliance on a given ABI, otherwise any future changes in an ABI or any code which is written differently (eg, low level OS code) could potentially cause the optimiser to produce incorrect code.
+
+\subsection{Concretisation}
+
+After optimisation, the AST representation must be translated back into binary code. Since transformations may have yielded arbitrary AST trees, not just those which are output from the abstraction stage, the algorithm used to do this must be sufficiently powerful to cover any AST tree. An algorithm which produces an optimum tiling over the AST tree is definitely preferable, to avoid the possibility of code actually becoming worse over successive optimisation passes.
+
+The well-known dynamic programming algorithm \cite{Tiger} is used for instruction selection. New temporaries may be introduced in this step for complex ASTs, which are allocated to physical registers in the following step.
+
+\subsection{Register reallocation}
+
+Temporary registers for reoptimised blocks can come from one of several places:
+
+\begin{itemize}
+\item Registers freed by static analysis
+\item Registers freed by tree splicing
+\item `Stolen' registers
+\end{itemize}
+
+The first makes use of the expiry tags in binary code, and propagates backwards through the set of known blocks any registers which may be used during their otherwise dead ranges. More registers are freed due to joining together ASTs, a step which also consumes (possibly different) temporary registers.
+
+These two steps may not be sufficient to produce enough registers to generate semantically correct code. The runtime system, however, keeps track of the live register set at each instance. More registers can be obtained by the use of a heuristic: the live register set at the start of a block is the same at optimisation time as it will be during future execution runs. This may prove to be untrue for different dynamic execution paths, so must be checked at runtime. If the check fails, we can fall back on the old (unoptimised) block and discard the new one.
+
+\subsection{Specialisation}
+
+If we notice a particular register always has the same value during execution of a commonly-executed block, we can add a guard to the block, then rewrite the register as a constant value in the AST for that block. Running optimisations may then cause beneficial cascading effects, for example fixing loop iteration count, or deconditionalising branches.
+
+It may be in this area that DOP produces the largest gains over what is possible without dynamic optimisation technology, though that will require much further work to determine.
+
+\section{Preliminary results}
+
+We are able to use our toolchain and simulator to compile and execute test executables written in C, for example the Dhrystone benchmark runs correctly. The optimiser is capable of translating blocks of binary code into AST form, performing some canonicalisation steps, then translating back into binary code.
+
+\section{Conclusion}
+
+We feel we have sufficiently demonstrated the benefits of our architecture to continue work on profiling and optimising code dynamically within the framework we have created. Due to our use of a novel architecture as described in this paper, we expect to produce significantly stronger results than have been produced by any pre-existing dynamic optimisation system.
+
+\section{Acknowledgements}
+
+This work is funded by the Engineering and Physical Sciences Research Council (EPSRC).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the bibliography
+
+% \addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{refs}
+% \cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+% \appendix
+
+\end{document}

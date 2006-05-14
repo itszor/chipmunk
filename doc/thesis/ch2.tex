@@ -1,0 +1,267 @@
+\chapter{Context}
+
+\section{Existing work}
+
+This section describes existing related work in, or around, the field of dynamic optimisation. Much of this work has been performed by commercial bodies rather than academia.
+
+\subsection{HP Dynamo}
+
+HP Dynamo is a software-based dynamic optimiser for PA-RISC/HPUX. It is capable of increasing the speed of +O2 compiled executables to that comparable to their +O4 counterparts. +O4 executables can also receive a speed boost. Dynamo is regarded as the leader in the field, and has progressed a lot so that there are now versions for ARM, etc. which can be used in embedded applications.
+
+\subsection{MS Research Mojo}
+
+Mojo is the Microsoft Research take on Dynamo. They aim for a more difficult problem, by tackling x86 code of the spaghetti GUI variety, ie their own dog food. Additional complexity of multi-threading. This hasn't worked too well for them so far, most programs slow down in fact.
+
+\subsection{Deco}
+
+Deco is a proof-of-concept dynamic optimisation system. This is the abstract:
+
+\begin{quote}
+This thesis describes the design of a software system capable of automatically performing code optimizations at run-time. Rather than attempting to run all optimizations statically, a compiler produces an executable capable of monitoring its own run-time behavior and performing on-the-fly optimizations which take advantage of current execution patterns. This technique, which we call dynamic optimization, potentially adds a high degree of adaptability to code optimization, postponing optimization decisions until the exact nature of the input set or program phase is known, and allowing these decisions to chnage as program behavior changes. The goal of this thesis is to demonstrate that dynamic optimiaztion is both feasible and profitable.
+\end{quote}
+
+Also ripped from the dissertation describing Deco: 
+
+\begin{itemize}
+\item It puts forth the idea of dynamic optimization: the run-time selection and optimization of program regions to take advantage of current program behavior. It points out the potential benefits and pitfalls of this technique.
+\item It identifies and explores the key issues involved in dynamic optimization: the identification of interesting program regions and the optimization of these regions.
+\item Preliminary results: Deco shows improvement in running time between -3\% and 8\% depending on the program. The main overhead seems to be in instrumentation, and optimization to a much lesser extent. 
+\end{itemize}
+
+\subsection{Compaq Spike}
+
+Offline (but post-compile) optimisation of Alpha/NT executables. Results claimed are very good, apparently up to 33\% improvement. Spike is good for call-intensive rather than loop-intensive applications. Traditional compilers are more suited to optimising the latter. DOES SPIKE NEED SOURCE CODE?
+
+\subsection{Transmeta Crusoe}
+
+Transmeta's Crusoe processor is designed with dynamic code translation in mind. It includes hardware support for precise exceptions and speculation in rescheduled code (shadow registers), optimization of memory operations (alias hardware), and self-modifying code (a ``translated'' bit in the MMU). It works on non-native binaries, to transparently execute IA-32 code on its own VLIW processor core.
+
+Crusoe's method of operation is otherwise similar to that used by various emulation systems. It starts out emulating code, then for frequently executed sections it does a `rough' translation to its own native code. These translations are cached and further optimised over time the more they are executed. By this method the designers claim that performance comparable to a modern hardware IA-32 implementation is obtained.
+
+\subsection{IBM Daisy}
+
+Daisy is a dynamic binary translator from PowerPC code to a new (PowerPC-based) VLIW target. The VLIWs are unusual in that they are trees (I don't entirely understand how they work). This might be the same as what I was proposing for my research, I'm not sure. Seems like a bit of a toy, but is a precursor to BOA.
+
+\subsection{IBM BOA}
+
+BOA is Crusoe for PowerPC. That is, it's a VLIW processor which exposes its gritty internals to a virtual machine monitor, which hosts all code above it as if it were running on a native PowerPC. It has special features to support binary translation. Inspired by work (also at IBM) on Daisy, also FX!32.
+
+\subsection{Wiggins/Redstone}
+
+Work described in a set of slides for Hot Chips 11. Dynamic optimisation system with some hardware support (hardware based sampler, apparently nothing not included in "stock hardware/stock OS" though). Good results.
+
+Creates multiple ``traces'', which may be up to 2000 instructions long. They claim this is long enough to insert pre-fetch instructions. 
+
+\subsection{HCO}
+
+HCO (the system described in the paper ``Hot Cold Optimization of Large Windows/NT Applications'') splits functions into two versions, one ``hot'' and one ``cold''. The hot version contains a compacted version of the common case, hoping to ensure that all code bought into the instruction cache is executed. In addition to the ``cold'' version of the code, fix-up stubs are created to restore the machine state in the cases the ``hot'' code is not to be executed.
+
+HCO provides a ``reduction in path length'' of 3-8\%, though this doesn't seem to be interpreted as speed-up in the paper for some reason (not read too carefully mind). 
+
+\section{Techniques}
+
+This section describes techniques which are common to some of the projects listed above.
+
+\subsection{Profiling and trace gathering}
+
+\section{Optimisations}
+
+This section describes optimisation techniques which have been implemented, successfully or otherwise, by some of the projects listed.
+
+\subsection{Trace flattening}
+
+The ``trace flattening'' optimisation is perhaps the most important technique discovered in dynamic optimisation systems to date [program-transformation.org]. The idea is to reorder the basic blocks in a section of program in such a way that most executions of the code will fall through branches (forward branches are typically predicted to not be taken). This minimises the cost of branch mispredictions, and keeps commonly executed code together. The latter will have the effect of making best use of the instruction cache, and minimising cache collisions.
+
+Such optimal positioning of basic blocks can be very effective at speeding up programs, especially when the information about branch frequencies is obtained dynamically (i.e. as the program is running).
+
+Trace flattening in some form is practiced by:
+
+\newcommand{\multinamedstart}{
+\begin{center}
+\begin{tabular}[b]{|l|p{9cm}|}
+\hline}
+
+\newcommand{\multinamedend}{
+\hline
+\end{tabular}
+\end{center}}
+
+\multinamedstart
+BOA & Trace formation \\
+Dynamo & Fragment Optimizer \\
+Wiggins/Redstone & (Does not modify program memory layout) \\
+Mojo & Hot paths \\
+HCO & Hot-cold optimization \\
+Spike & Program layout \\
+Deco & Generates ``hot paths'' (superblocks with common case as straight-line code) \\
+Etch & Static program/data layout \\
+\multinamedend
+
+\subsection{Speculative indirect branch conversion}
+
+This optimisation converts indirect branches into guarded direct branches, which typically have a lower overhead when the destination is always the same. This optimiation is performed in hardware by modern CPUs.
+
+Older processors did not have this feature, so doing it in a dynamic optimisation framework can be a win. Again, this technique has been renamed by several projects:
+
+\multinamedstart
+Dynamo & - \\
+Embra & Speculative chaining \\
+HP Dynamo & Indirect branch linking \\
+\multinamedend
+
+\subsection{Combining}
+
+CHECK WHAT COMBINING IS
+
+\multinamedstart
+Daisy & - \\
+\multinamedend
+
+\subsection{Constant propagation and folding}
+
+When basic blocks are reordered, extra opportunities can arise for expression simplification. Constant propagation traces values through expressions, and constant folding performs operations on constant values at compile-time (that is, at optimisation time). Constant propagation might turn conditional branches into unconditional branches, which can be turned into no-ops using trace flattening.
+
+Practiced by:
+
+\multinamedstart
+HP Dynamo & - \\
+Wiggins/Redstone & - \\
+\multinamedend
+
+\subsection{Copy propagation}
+
+Copy propagation can be used to remove most move instructions from a given section of code, and will certainly be performed by an optimising compiler. It is useful in the presence of a dynamic optimisation system because the reordering of blocks by trace flattening can give rise to new opportunities to use it successfully.
+
+It is implemented by:
+
+\multinamedstart
+Alto & - \\
+Deco & - \\
+Daisy & - \\
+HCO & - \\
+HP Dynamo & - \\
+\multinamedend
+
+\subsection{Load-store must aliases}
+
+When it can be proved that a load from a particular address directly follows a store from the same address, the load can be eliminated. In a dynamic optimisation system, we might be able to convert indirect memory references into direct memory references, which makes this optimisation useful.
+
+Practiced by:
+
+\multinamedstart
+Alto & - \\
+Daisy & - \\
+HP Dynamo & - \\
+\multinamedend
+
+\subsection{Load-verify}
+
+Moves loads as early as possible. If at least one store is present before the value is used, a load-verify instruction is inserted \& if the value loaded is different a ``load verify trap'' is taken (and presumably, the intervening instructions are invalidated). CHECK DAT. Practiced by:
+
+\multinamedstart
+Daisy & - \\
+HP Dynamo & Guarded load \\
+IA-64 & Data speculative loads \\
+\multinamedend
+
+\subsection{Dead code elimination}
+
+We might generate some code during optimisation which is never reached. Dead code elimination avoids including this code into optimised fragments.
+
+\multinamedstart
+Crusoe & - \\
+Daisy & - \\
+HP Dynamo & - \\
+\multinamedend
+
+
+\subsection{Partially-dead code removal}
+
+Partially-dead code is...
+
+And is eliminated by:
+
+\multinamedstart
+Deco & removes dead code on hot paths, and compensates if necessary by adding fix-up code in the stubs which are executed in the cold case \\
+HCO & - \\
+\multinamedend
+
+\subsection{Unrolling}
+
+Loop unrolling is the making of multiple copies of a loop's body, which is useful in CHEK scheduling and stuff. Done by (at runtime):
+
+\multinamedstart
+Daisy & - \\
+HP Dynamo & - \\
+\multinamedend
+
+\subsection{Loop invariant removal}
+
+Moves loop-invariant code out of loops.
+
+Practiced by:
+
+\multinamedstart
+Crusoe & - \\
+HP Dynamo & - \\
+\multinamedend
+
+\subsection{Common subexpression elimination}
+
+This is a heavy optimisation, so it is not a surprise to see it in rather few dynamic optimisation projects. However I found a reference to Crusoe including it.
+
+\subsection{Strength reduction}
+
+Practiced by HP Dynamo.
+
+\subsection{Redundant branch removal}
+
+HP Dynamo.
+
+\subsection{Multi-versioning}
+
+CHECK WHAT MULTI-VERSIONING IS, practiced by:
+
+\multinamedstart
+HCO & - \\
+Spike & HCO \\
+HP Dynamo & - \\
+\multinamedend
+
+\section{Common specialised hardware features}
+
+This section describes hardware features common between some of the projects mentioned, where applicable. Each project commonly invents a new name for a technique used by other projects. I have tried to find these cases and group them together.
+
+\subsection{Register rollback}
+
+Crusoe \& BOA.
+
+\subsection{Alias hardware}
+
+Crusoe.
+
+\subsection{Speculative stores}
+
+Who has speculative stores?
+
+\section{Garbage collection strategies}
+
+We are generating code on-the-fly. Without some way of getting rid of old code, we might eventually exhaust store. This section will describe some garbage collection techniques which have been attempted by existing projects.
+
+\subsection{Fixed-size cache}
+
+Moof.
+
+\subsection{Pre-emptive flushing}
+
+HP Dynamo uses a pre-emptive flushing mechanism of the whole of its fragment cache. Rather than extending the cache or flushing it when it becomes full, it is flushed when a sharp increase in fragment creation rate is noticed. This means that phased behaviour of code, eg change in working set after certain periods of time, is handled well.
+
+This mechanism seems to work well for them in practice.
+
+\subsection{Whatever approach Mojo uses}
+
+Mojo uses a private basic block cache per thread (64k) and a shared path cache. path cache size chosen between 512kb-5Mb depending on executable size. Mojo makes programs slower.
+
+\subsection{Whatever Wiggins/Redstone uses}
+
+Maintains 16 or so ``traces'' at any given time. Traces are removed ``as computation evolves'', so perhaps LRU or something?

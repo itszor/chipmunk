@@ -1,0 +1,186 @@
+2005/12/30
+==========
+
+- Minor instruction selection API cleanups
+
+- Phi node elimination uses instruction selection rather than hardwiring insns
+
+2005/12/29
+==========
+
+- Minor tweak to phi nodes with non-registers. A plan to make them work.
+
+2005/12/29
+==========
+
+- Attempt at merging changes since last repo backup (thanks Rob, not).
+
+2005/11/14
+==========
+
+- Name change dop -> chipmunk
+
+- Run binary encode pass
+
+- FIXME: Phi nodes can get non-register things put in them (constants)
+by the constant propagation pass, and that breaks the register
+allocator. Whoops.
+
+2005/10/17
+==========
+
+- Fix bug volatile/nonvolatile
+
+- Instruction selection catches failures better
+
+2005/10/17
+==========
+
+- A few bugfixes in liveness analysis
+
+- Another few bugfixes in reg allocation
+
+- Some more in instruction selection / phi nodes
+
+- Generates broken assembly languages (dump #09).
+
+2005/10/09
+==========
+
+- Phi node elimination happens after instruction selection, liveness analysis
+and register allocation.
+
+2005/10/06
+==========
+
+- AST Pair removed.
+
+- Some splice fixes (constant evaluation, etc).
+
+- Index layout for optimised fragments.
+
+2005/08/31
+==========
+
+- AST Vector removed.
+
+2005/08/30
+==========
+
+- register allocation doesn't spill anything for "hello world" test.
+
+- Ast "Vector" on the way out. All uses should be removed. (Binary) AST using "Pair" should be changed to ternary ast instead, with corresponding simplification of higher-order AST functions etc.
+
+- Reworking of translate.ml. Less ugly, more efficient, no need for Vector.
+
+- Add ChangeLog. Populate with stuff previously in ideas.txt.
+
+2005/08/15
+==========
+
+- have a basic version of register allocation by graph colouring working at least partly. Doesn't handle different registers classes (esp. float vs int registers), coalescing (which should be easy-ish, I think), fixed allocations (which should be relatively easy-ish most of the time too).
+
+- to solve register classes, we should use different (3) pools, whereas at the moment we have one. Removing a register from the ptr/int pools must remove it from the same position in the int/ptr pools.
+
+- Thus, we must excise ptr regs. Probably best to make multi-reg transfer 2-way.
+
+
+2005/07/10
+==========
+
+- implemented generic graph using functor stuff. Seems to work. (Previous idea for interference graph with ordering is not sufficient for our needs.)
+
+
+2005/07/03
+==========
+
+- Read a little about graph colouring. We definitely want to be using this.
+
+- For multi-mem instructions, the ast 'Vector' isn't quite right. There should probably be a sequential equivalent (writeback is ambiguous otherwise).
+
+- fixed assignments extracted from block graph.
+
+- interference graph has an ordering: i.e. from < to.
+
+- maybe reg allocation can weakly bias ptr regs going into r56-r63... not too important though. Just to stop stack frame code from expanding a little, which it might otherwise do. Maybe it's enough to try to avoid moving registers wherever possible.
+
+
+2005/06/29
+==========
+
+- I think the primary concern next isn't ptr reg/int reg, that's a distraction: can be fixed by an opportunistic peephole-type pass, ie hack. Instead, the precolouring pass should use interference2 data (easy), then a second colouring pass should assign regs first from compiler set, then recompiler set. If this fails, we die.
+
+There's nothing complicated left there, I don't think. We should be able to generate working code most of the time -- that is absolutely vital. Coalescing is probably important, but its absence shouldn't stop allocation from working. We can easily delete moves to the same register.
+
+- Scrub above, phi-node elimination needs rewriting too I think. Shouldn't be hard.
+
+- we need to fix local block refs/allocation. Initial attempt can discard entire recompile cache when it's full.
+
+
+2005/06/27
+==========
+
+- interference analysis working on selected insns, I think. Phi nodes need eliminating (after reg allocation, perhaps?)
+
+- dumping code split into seperate module, choice of info for each dump.
+
+- dumb simplification pass to remove trivially useless register moves (out reg=in reg, currently in driver.ml but should be moved somewhere else really). Cuts down on number of conflicts in register graph, a lot.
+
+- ptr reg/int reg stuff *really* needs sorting out.
+
+
+2005/05/29
+==========
+
+- use/def information is passed through instruction selection, though it's probably buggy. Just needed to scan the matching-structure at the top-level pattern building function to suck out int_reg/int_dst_reg etc. Phi nodes awkward though, and need special-casing somewhere.
+
+- driver selects instructions ready for interference analysis
+
+- interference analysis needs changing to use the selected instructions/use-def info.
+
+
+2005/05/22
+==========
+
+What happened to the last year? Notes elsewhere, I think. Or maybe I did nothing.
+
+- Selected instructions need use/def information. Must leak through from AST (partly done). This should be finished. Dead registers should leak thru too, they are important.
+
+- Interference analysis needs phi nodes intact. Therefore phi nodes must leak through instruction selection (done).
+
+- And therefore, phi node elimination should happen on the selected instruction format, not before.
+
+- should redo cost/cost_with_kids to be total_cost/self_cost or something more descriptive.
+
+- tracing: calls should be traced especially to enable partial specialisation of functions. This is possible with the existing "block transition"-type tracing, but the call site & function body are duplicated. It should be possible to share specialised function bodies. And adds another bit of value to the project, hopefully...
+
+
+2004/05/20
+==========
+
+Haskell apparently uses run-time dispatch to deal with thunks, used for lazy values. Hence an opportunity for run-time optimisation. I think GHC can be made to output C code, investigate this possibility.
+
+
+2004/04/27
+==========
+
+Idea: maybe we can use dynamic somethingorother instead of an (full) MMU? Or maybe not...
+
+
+2004/04/24
+==========
+
+[1] - AST regs use new Assign/Use/LastUse rather than Iformat.life
+[2] - Cleaned up for above
+[3] - wrote lifetime sanity checker, apparently non-working
+[4] - duh, Ast.fold_right_postorder is rather broken
+[5] - fixed [4], also [3]
+
+
+2004/04/20
+==========
+
+- fixed missing_expiry so lvalues are not made dead
+- block terminators are renumbered correctly after stitching
+- register used for conditional branch is NOT pseudo-ified right
+- missing_expiry still not quite right!

@@ -1,0 +1,108 @@
+This is an ideas/to do list for DOP.
+
+-- Regression testing
+
+This needs to be implemented so that the system is debuggable. There is currently a lack of information in knowing how many blocks are 'covered' by an optimised block, so its effects can't easily be directly compared. This (and other things) leads to the "audit trail" below.
+
+-- Audit trail
+
+When a block is optimised, a note must be made somewhere of what exactly was done to that block. This would possibly help any crazy Bayesian-learning algorithm to know when and how to adaptively optimise code. It would also allow, eg, making specially instrumented versions of code to gather data, which are then rolled back to the uninstrumented version and reoptimised. If no trail is left, we wouldn't reliably know that the code was instrumented later.
+
+Several possibilities of places to put the trail:
+
+  1. In the "meta" word of the corresponding index
+  2. After the code block
+  3. In a (garbage-collected) block by itself
+  4. As 3, but low bit indicates short (31-bit) note if set, ptr otherwise
+
+In case 1, each note would be limited to 32 bits, which might be too restrictive. Eg a "stitch" operation which joins two blocks together might want to store an opcode meaning 'stitch', and two 32-bit block pointers, which obviously won't fit into a single 32-bit word.
+
+In case 2, we can have arbitrary-length notes but are guaranteed to waste about 0.5-code cache line per block. (Leaving blank space doesn't help).
+
+In case 3, we have to deal with more blocks, but at least they can be out-of-line with the code.
+
+Case 4 should save some time and space.
+
+-- Make block stitching work
+
+...somehow...
+
+-- Implement register allocation for new temporaries
+
+After optimisations, we will generate ASTs which cannot be trivially mapped back into binary code without extra temporaries. We must allocate those temporaries to registers or a compiler-controlled memory block.
+
+  * Scavenge live register ranges
+  * Implement allocation (probably linear scan)
+  * Make sure expiry bits remain valid - leakage could happen!
+
+The compiler-controlled block should be used as scratch space only, like a "mini-stack" which is only valid *for the duration of a single block*. If any values are needed after a block terminates, we would have to keep track of a whole chain of temporary blocks... which doesn't actually sound impossible? We could just use a linked list.
+
+Thread-safety would suggest that the temp block should be accessed only through a base register, so there would be a different block/chain per thread. This should probably be architecturally-defined, eg as r59.
+
+-- Audit tags
+
+We could have tags representing:
+
+  * Block just optimised, and in probation period. If found to impede performance, roll back and free store immediately. Mark the block as a poor choice for optimisation.
+  
+  * Never optimise, eg to protect hand-written code or sensitive OS code.
+  
+  * Stitch block: (Allocated) tag and parents
+  
+  * Jump-folded block(s): Blocks not stored, can be recovered implicitly
+  
+  * Specialised for profiling data values: Allocated tag and data values. (metadata block can be read via r63).
+  
+  * (Original program) named block.
+
+  * Instrumented for timing (vs. just count number of instructions)
+
+
+Dead & partially-dead code removal
+==================================
+
+eg, partially-dead code removal:
+
+_blk:
+  mov r0,r3
+  trap _foo, r3, #0
+  mov r0,#1
+  jump _bar
+
+we can move the "mov r0,r3" to a seperate block, _fixup:
+
+_blk:
+  trap _fixup, r3, #
+  mov r0,#1
+  jump _bar
+
+_fixup:
+  mov r0,r3
+  jump _foo
+
+
+Register Allocation
+===================
+
+Do register allocation AFTER instruction selection but BEFORE generating symbolic assembly code, ie on the ACT (Abstract Code Tree to you) form. Each ACT node should record how many temporaries it needs.
+
+Loop invariant hoisting
+=======================
+
+For self-repeating blocks, pull out constant code & make another block with that code in it before. If there's enough code for it to be worthwhile anyway.
+
+Ast rethink
+===========
+
+AST (memoizedast anyway) is horrible & "un-functional". Can it be fixed? It would be good to use more higher-order functions to iterate over structures rather than duplicating the AST walk in each little bit of manipulation that we do. [this is done, mostly]
+
+It would be good to write out all the stages which are done by the optimizer even now, and try to factor out the right abstraction to simplify the passes.
+
+I don't much like vector or pair. Pair is only used in one place I think, bitfield instructions. In fact I'm not sure about those bitfield instructions either.
+
+Once instruction selection has taken place, is it really necessary for the original AST to still be part of the data structure? Can we build up a different data type instead, and avoid duplicating the AST type? [no longer applicable I think]
+
+Rules matching
+==============
+
+We should create a table-driven FSM to match rules, rather than the current brute-force method. This would lead to both smaller and faster (selection) code. Read papers on BURG.

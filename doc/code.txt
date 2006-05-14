@@ -1,0 +1,27 @@
+Data-dependent code
+===================
+
+Compression (Huffman inner loop)
+DCT? (MPEG, JPEG)
+Lexers/parsers
+Compiler optimisation passes
+Sorting (which algorithms?)
+AI routines? A* search?
+
+
+Pack/unpack-heavy code
+======================
+
+Software FP (CSE)
+Various colour mixing ops, perhaps
+OpenGL code?
+
+
+OO code:
+
+Java/C++ non-inline method calls
+ - inside loops
+ - inside switches
+ - virtual calls more interesting - not much used atm because of speed hit
+ - C++ iterators?
+Can we get gecko working?

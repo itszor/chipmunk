@@ -1,0 +1,878 @@
+#LyX 1.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 218
+\textclass article
+\language english
+\inputencoding auto
+\fontscheme default
+\graphics default
+\paperfontsize default
+\spacing single 
+\papersize Default
+\paperpackage a4
+\use_geometry 0
+\use_amsmath 0
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\quotes_times 2
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+
+\layout Section
+
+Special registers
+\layout Standard
+
+There are several special registers defined:
+\layout Itemize
+
+r63: BLOCK reference
+\layout Itemize
+
+r62: LINK reference
+\layout Itemize
+
+r61: FRAME pointer
+\layout Itemize
+
+r60: STACK pointer
+\layout Itemize
+
+r59: STATIC pointer
+\layout Section
+
+Instruction format
+\layout Standard
+
+Instruction format bits look like this:
+\layout Standard
+\added_space_top 0.3cm \align center 
+\layout Standard
+\added_space_bottom 0.3cm \align center 
+
+\begin_inset Figure size 535 328
+file fmt.eps
+width 3 90
+flags 10
+
+\end_inset 
+
+
+\layout Subsection
+
+ALU and ALU immediate format instructions
+\layout Subsubsection
+
+Opcode 0: MOV
+\layout Standard
+
+Moves Rn into Rd.
+ Rm is ignored.
+\layout Subsubsection
+
+Opcode 1: NOT
+\layout Standard
+
+Moves bitwise negation of Rn into Rd.
+ Rm is ignored.
+\layout Subsubsection
+
+Opcode 2: LSL
+\layout Standard
+
+Shifts Rm left logically by (the lowest five bits of) Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 3: LSR
+\layout Standard
+
+Shifts Rm right logically by (lowest five bits of) Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 4: ASR
+\layout Standard
+
+Shift Rm right arithmetically by (lowest five bits of) Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 5: ROR
+\layout Standard
+
+Rotate Rm right by (lowest five bits of) Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 6: AND
+\layout Standard
+
+Bitwise AND of Rm and Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 7: IOR
+\layout Standard
+
+Bitwise inclusive OR of Rm and Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 8: EOR
+\layout Standard
+
+Bitwise exclusive OR of Rm and Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 9: BIC
+\layout Standard
+
+Bitwise AND of Rm and bitwise-negated Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 10: ADD
+\layout Standard
+
+Adds Rm and Rn, result in Rd.
+\layout Subsubsection
+
+Opcode 11: SUB
+\layout Standard
+
+Subtracts Rn from Rm.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 12: RSB
+\layout Standard
+
+Subtracts Rm from Rn.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 13: MUL
+\layout Standard
+
+Multiplies Rm by Rn.
+ Lowest 32 bits of result in Rd.
+\layout Subsubsection
+
+Opcode 14: DIV
+\layout Standard
+
+Divides Rm by Rn, treating both as signed values.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 15: UDIV
+\layout Standard
+
+Divides Rm by Rn, treating both as unsigned values.
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 16: MOD
+\layout Standard
+
+Finds Rm modulo Rn, giving a negative result if Rm xor Rn negative (I think).
+ Result in Rd.
+\layout Subsubsection
+
+Opcode 17: UMOD
+\layout Standard
+
+Finds Rm modulo Rn, treating both as unsigned values.
+ Result in Rd.
+\layout Subsection
+
+MVC format instructions
+\layout Subsubsection
+
+Opcode 18: MVC
+\layout Standard
+
+An instruction for getting a 16-bit immediate value into a register.
+ If the H bit is set, immediate is put into the high 16 bits of the register
+ Rd, else the low 16 bits.
+\layout Standard
+
+If the R (replace) bit is set, the ``other'' 16 bits are set to the value
+ of the V (value) bit, else they are left intact.
+\layout Standard
+
+mvc.l r5,#_foo
+\layout Standard
+
+mvc.h r5,#_foo
+\layout Standard
+
+mvc.le r3,#65000 ; r3 <- 0x0000fde8 (``empty'')
+\layout Standard
+
+mvc.hf r4,#257 ; r4 <- 0x0101ffff (``full'')
+\layout Subsection
+
+CMP and CMP immediate format instructions
+\layout Standard
+
+Condition codes:
+\layout Itemize
+
+0: eq
+\layout Itemize
+
+1: ne
+\layout Itemize
+
+2: ge
+\layout Itemize
+
+3: gt
+\layout Itemize
+
+4: le
+\layout Itemize
+
+5: lt
+\layout Itemize
+
+6: andl (unsigned only)
+\layout Itemize
+
+7: eorl (unsigned only)
+\layout Itemize
+
+6: nandl (signed only)
+\layout Itemize
+
+7: neorl (signed only)
+\layout Standard
+
+The logical operations are split between signed and unsigned comparison
+ variants.
+ Operations are bitwise.
+ For andl and eorl, if the result is zero, the destination register receives
+ $TRUEVAL (-1), else $FALSEVAL (0).
+ For nandl and neorl, the destination register receives the opposite.
+\layout Subsubsection
+
+Opcode 19: CMP (CMP format)
+\layout Standard
+
+Compares Rm with Rn based on comparison field, in a signed manner.
+ If true, Rc receives $TRUEVAL, else $FALSEVAL.
+\layout Subsubsection
+
+Opcode 20: UCMP (CMP format)
+\layout Standard
+
+Same as CMP, but unsigned.
+\layout Subsubsection
+
+Opcode 21: CMPI (CMPI format)
+\layout Standard
+
+Same as CMP, but using immediate field instead of Rn.
+\layout Subsubsection
+
+Opcode 22: UCMPI (CMPI format)
+\layout Standard
+
+Same as UCMP, but using immediate field instead of Rn.
+\layout Subsubsection
+
+Opcode 23: TRAP (CMP format)
+\layout Standard
+
+Trap instructions are used to form superblocks.
+ They are intended to be taken on the infrequent path through a piece of
+ code.
+\layout Standard
+
+Traps to indirect block Rc if signed comparison between Rm and Rn is true.
+\layout Standard
+
+trap.bicl r0, r4, r7 ; trap to *r0 if r4 & ~r7 is non-zero
+\layout Subsubsection
+
+Opcode 24: ITRAP (CMP format + COMM)
+\layout Standard
+
+Traps to immediate block if signed comparison is true.
+ An immediate word follows this instruction (yuk!).
+\layout Standard
+
+trap.eq _foo, r5, r5 ; trap to _foo if r5 equals r5
+\layout Subsubsection
+
+Opcode 25: TRAPI (CMPI format)
+\layout Standard
+
+Like TRAP, but using an immediate value rather than Rn.
+\layout Standard
+
+trap.lt r5, r7, #30 ; trap to *r5 if r7 less than 30
+\layout Subsubsection
+
+Opcode 26: ITRAPI (CMPI format + COMM)
+\layout Standard
+
+Like ITRAP, but using an immediate value rather than Rn.
+\layout Standard
+
+trap.nandl _foo, r3, #0x80000000 ; trap to _foo if r3 is positive
+\layout Subsubsection
+
+Opcode 27: UTRAP (CMP format)
+\layout Standard
+
+Unsigned variant of TRAP.
+\layout Standard
+
+utrap.eq r3, r4, r5 ; trap to *r3 if r4 equals r5
+\layout Subsubsection
+
+Opcode 28: UITRAP (CMP format + COMM)
+\layout Standard
+
+Unsigned variant of ITRAP.
+\layout Standard
+
+utrap.ge _foo, r5, ~r6 ; trap to _foo if r5 greater than r6, expiring r6
+ (unconditionally)
+\layout Subsubsection
+
+Opcode 29: UTRAPI (CMPI format)
+\layout Standard
+
+Unsigned variant of TRAPI.
+\layout Subsubsection
+
+Opcode 30: UITRAPI (CMPI format + COMM)
+\layout Standard
+
+Unsigned variant of ITRAPI.
+\layout Standard
+
+utrap.andl _foo, r3, #1 ; trap to _foo if r3 is odd
+\layout Subsection
+
+BITF format instructions
+\layout Subsubsection
+
+Opcode 31: BFI
+\layout Standard
+
+Insert low bits of Rm into bits Bstart..Bend inclusive of Rd.
+\layout Subsubsection
+
+Opcode 32: BFX
+\layout Standard
+
+Extract bits Bstart..Bend inclusive of Rm into Rd, possibly sign-extending
+ if S bit is set.
+\layout Standard
+
+Can be used, e.g., for loading signed bytes, by doing:
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="2" rows="2" columns="2">
+<features rotate="false" islongtable="false" endhead="0" endfirsthead="0" endfoot="0" endlastfoot="0">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+ldr.b r4,[r5,#8]
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; load byte r4 from r5+8
+\end_inset 
+</cell>
+</row>
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+bfx.s r3,r4 <0,7>
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; copy bits 0..7 of r4 into r3, sign-extending
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Subsection
+
+SMEM and SMEMI format instructions
+\layout Standard
+
+Width specifications:
+\layout Itemize
+
+0: Byte (8 bits)
+\layout Itemize
+
+1: Halfword (16 bits)
+\layout Itemize
+
+2: Word (32 bits)
+\layout Itemize
+
+3: reserved
+\layout Standard
+
+The memory address used is Rb+Ri if the I bit is zero, or Rb+(offset-64)*sizeof(
+width) if the I bit is one.
+\layout Standard
+
+Each SMEM instruction operates on one of four domains (Dom).
+\layout Subsubsection
+
+Opcode 33: LDR
+\layout Standard
+
+Load value Rd from memory location pointed to by address.
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="2" rows="2" columns="2">
+<features rotate="false" islongtable="false" endhead="0" endfirsthead="0" endfoot="0" endlastfoot="0">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+ldr.w r3,[r4,r5]
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; load r3 with 32-bit quantity at address r4+r5
+\end_inset 
+</cell>
+</row>
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+ldr.h r3,[r4,#30]
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; load r3 with 16-bit quantity at address r4+30
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Subsubsection
+
+Opcode 34: STR
+\layout Standard
+
+Store value Rd to memory location pointed to by address.
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="2" rows="2" columns="2">
+<features rotate="false" islongtable="false" endhead="0" endfirsthead="0" endfoot="0" endlastfoot="0">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<column alignment="left" valignment="top" leftline="false" rightline="false" width="" special="">
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+str.w r3,[r4,r5]
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; store r3 to word at address r4+r5
+\end_inset 
+</cell>
+</row>
+<row topline="false" bottomline="false" newpage="false">
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="false" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+str.b r3,[r4,#30]
+\end_inset 
+</cell>
+<cell multicolumn="0" alignment="center" valignment="top" topline="true" bottomline="false" leftline="true" rightline="true" rotate="false" usebox="none" width="" special="">
+\begin_inset Text
+
+\layout Standard
+
+; load r3 to byte at address r4+30
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Subsection
+
+MMEM format instructions
+\layout Standard
+
+MMEM instructions operate on a contiguous range of registers, which are
+ always stored upwards in memory.
+ Except for discontinuous register ranges, all semantics are stolen from
+ the ARM processor.
+ Probably an implementation nightmare.
+ Probably mostly irrelevent.
+\layout Standard
+
+The base register Rb is copied into a temporary address register.
+ This register can be modified up or down (U bit) after or before (B bit)
+ each memory operation.
+ Optionally (W bit) the final address can be written back into the base
+ register (Rb).
+\layout Standard
+
+Each MMEM instruction operates on one of four domains (Dom).
+\layout Subsubsection
+
+Opcode 35: LDM
+\layout Standard
+
+Load a contiguous range of registers from memory.
+\layout Standard
+
+ldm.ia r5,{r10-r30} ; load registers r10..r30 from memory range starting at
+ r5, incrementing address register after each operation.
+ r5 not written back.
+\layout Subsubsection
+
+Opcode 36: STM
+\layout Standard
+
+Store a contiguous range of registers to memory.
+\layout Standard
+
+stm.db r5!,{r10-r30} ; store registers r10..r30 to memory range starting at
+ r5, decrementing address register after each operation.
+ r5 written back with final value of address register.
+\layout Subsection
+
+SWI format instructions
+\layout Subsubsection
+
+Opcode 37: SWI
+\layout Standard
+
+Trap to supervisor mode, branch through a SWI vector (to OS).
+\layout Subsection
+
+ALU and ALU immediate format float instructions
+\layout Standard
+
+Immediate-form instructions perform an implicit conversion of the (integer)
+ immediate, unless that turns out to be a really bad idea.
+ Probably the most-used is zero anyway, one can imagine that might be special-ca
+sed by hardware.
+ But I digress.
+\layout Subsubsection
+
+Opcode 38: MOVF
+\layout Standard
+
+Move floating-point register Fn into Fd.
+ Fm is ignored.
+\layout Standard
+
+movf f4, ~f7
+\layout Standard
+
+movf f5, #50.0
+\layout Subsubsection
+
+Opcode 39: NEGF
+\layout Standard
+
+Move negation of Fn into Fd.
+ Fm is ignored.
+\layout Standard
+
+negf f3,f3
+\layout Subsubsection
+
+Opcode 40: ABSF
+\layout Standard
+
+Move absolute value of Fn into Fd.
+ Fm is ignored.
+\layout Standard
+
+absf f4,f8
+\layout Subsubsection
+
+Opcode 41: FLTF
+\layout Standard
+
+Move integer register Rn into float register Fd.
+ Fm is ignored.
+\layout Standard
+
+fltf f6,r6
+\layout Subsubsection
+
+Opcode 42: FIXF
+\layout Standard
+
+Move integer part of float register Fn into Rd.
+ Rm is ignored.
+ Rounding mode can be specified perhaps by the unused Rm bits, out of:
+\layout Itemize
+
+0: Round to zero (.z)
+\layout Itemize
+
+1: Round to nearest (.n)
+\layout Itemize
+
+2: Round to 
+\begin_inset Formula \( +\inf  \)
+\end_inset 
+
+ (.d)
+\layout Itemize
+
+3: Round to 
+\begin_inset Formula \( -\inf  \)
+\end_inset 
+
+ (.u)
+\layout Standard
+
+fixf.z r5,f7
+\layout Subsubsection
+
+Opcode 43: ADDF
+\layout Standard
+
+Add Fm and Fn, result in Fd.
+\layout Standard
+
+addf f0,f1,~f2
+\layout Subsubsection
+
+Opcode 44: SUBF
+\layout Standard
+
+Subtract Fn from Fm, result in Fd.
+\layout Standard
+
+subf f2,~f3,f4
+\layout Subsubsection
+
+Opcode 45: MULF
+\layout Standard
+
+Multiply Fm by Fn.
+ Result in Fd.
+\layout Standard
+
+mulf f0,f0,f0
+\layout Subsubsection
+
+Opcode 46: DIVF
+\layout Standard
+
+Divide Fm by Fn.
+ Result in Fd.
+\layout Standard
+
+divf f1,~f2,f3
+\layout Subsection
+
+CMP format float instructions
+\layout Subsubsection
+
+Opcode 47: CMPF
+\layout Standard
+
+Compare Fm with Fn.
+ Fc set to $TRUEVAL if comparison true, else $FALSEVAL.
+ Comparison values 6,7 undefined, so only eq, ne, le, lt, ge, gt should
+ be used.
+ Maybe we need others to handle denormal/infinite/NaN values.
+\layout Standard
+
+cmpf.ge r6,f4,f7
+\layout Subsection
+
+SMEM and SMEMI format float instructions
+\layout Standard
+
+Width specifications:
+\layout Itemize
+
+0: Single-precision IEEE 754 (.s)
+\layout Itemize
+
+1: Double-precision IEEE 754 (.d)
+\layout Itemize
+
+2,3: undefined
+\layout Standard
+
+The memory address used is Rb+Ri if the I bit is zero, or Rb+(offset-64)*4
+ if the I bit is one.
+\layout Subsubsection
+
+Opcode 48: LDF
+\layout Standard
+
+Load floating-point value Fd from memory.
+\layout Standard
+
+ldf.d f7,[r5,#8]
+\layout Subsubsection
+
+Opcode 49: STF
+\layout Standard
+
+Store floating-point value Fd to memory.
+\layout Standard
+
+stf.s f30,[r5,r6]
+\layout Subsection
+
+TFER format instructions
+\layout Standard
+
+One extra word following the instruction is used for each of Ix or Iy if
+ they are set to one, forming immediate (rather than indirect) block references.
+\layout Subsubsection
+
+Opcode 50: MAP
+\layout Standard
+
+Undefined format! Will hold a map of live registers at this point.
+ During execution, this shall be a no-op (but that smells bad in terms of
+ efficiency.
+ Fixme!).
+\layout Subsubsection
+
+Opcode 51: FORK
+\layout Standard
+
+If Rc is non-zero, transfer control to X, else transfer control to Y.
+\layout Subsubsection
+
+Opcode 52: CALL
+\layout Standard
+
+Copy Y to r62 (link), transfer control to X.
+\layout Subsubsection
+
+Opcode 53: JUMP
+\layout Standard
+
+Transfer control to X.
+\layout Subsubsection
+
+Opcode 54: RET
+\layout Standard
+
+Transfer control to r62.
+ A similar result can be obtained using JUMP, but if RET is used then control
+ is guaranteed to return to the calling context.
+ This means effectively that r62 hasn't been messed with in the meantime.
+\layout Standard
+
+Must be like this for dynamic inlining to work for effectively.
+\layout Subsubsection
+
+Opcode 55: STOP
+\layout Standard
+
+Terminates each basic block.
+ Each basic block starts with one of the other TFER instructions (FORK,
+ CALL, JUMP, RET), which latches Rc, X and Y.
+ Prefetching can occur immediately for immediate CALL and JUMP instructions.
+ Prefetching occurs for indirect CALL, JUMP and all FORK and RET instructions
+ as soon as Rc (always r62 for RET) is expired during block execution.
+\layout Standard
+
+This might be slightly overcomplicated.
+\layout Subsection
+
+SWI format instruction
+\layout Subsubsection
+
+Opcode 61: LDX
+\layout Standard
+
+Number forms the low 26 bits of an immediate block reference.
+ Top 6 bits are formed by unused register number in following TFER instruction.
+ LDX loads its operand into the X register.
+\layout Subsubsection
+
+Opcode 62: LDY
+\layout Standard
+
+Like LDX, but loads value into the Y register.
+\layout Subsubsection
+
+Opcode 63: LDZ
+\layout Standard
+
+This one is for immediate trap instructions.
+\the_end

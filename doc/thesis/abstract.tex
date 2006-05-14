@@ -1,0 +1,11 @@
+\chapter*{Abstract}
+
+In this thesis, I demonstrate that it is possible to reduce the running time of a useful class of programs by using a combination of atypical hardware features and software optimisation. By gathering knowledge of run-time behaviour and applying it in a timely fashion, it is shown that code which would traditionally run inefficiently can be improved significantly.
+
+A new instruction-set architecture and hardware profiling framework is presented, together with algorithms which can rapidly be applied to running code to modify it to run more efficiently on its current data set. Also, compilation tools have been written or ported (with suitable modifications) so that high-quality binary code for the architecture can be produced.
+
+The ideas shown in this thesis demonstrate that higher performance and lower resource requirements can be obtained for existing code, whilst simultaneously reducing the amount of storage required for programs. Compiler optimisations which trade size for speed can be left to optimise for size, without adversely affecting speed. New code written for this architecture could utilise abstractions cleanly which are inefficient on contemporary hardware, without fear of impacting performance.
+
+Novel techniques presented in this thesis over existing dynamic optimisation systems include: the use of hardware to gather profile information at very low cost, an instruction set tuned to easy analysis as well as simple hardware implementation, annotations in binary code to enable more aggresive optimisations to be performed quickly and safely.
+
+For the purposes of validation, the new architecture is compared with a number of existing architectures, and with itself with optimisation disabled. Since no hardware implementation is available, a cycle-accurate simulator is presented which mimics the characteristics of a typical RISC processor.

@@ -1,0 +1,327 @@
+graph: {
+  manhattan_edges: yes
+  splinefactor: 90
+  orientation: left_to_right
+  finetuning: yes
+  splines: yes
+  layoutalgorithm: maxdegree
+
+  node: {
+    title: "Shade"
+    label: "Shade\nSun, 93\nRobert F. Cmelik,\nDavid \"Pardo\" Keppel"
+  }
+  
+  node: {
+    title: "Dynamo"
+    label: "Dynamo\nHP, 96-99\nVasanth Bala,\nEvelyn Duesterwald,\nSanjeev Banerja"
+  }
+  
+  node: {
+    title: "ConteSathaye95"
+  }
+  
+  node: {
+    title: "Daisy"
+    label: "Daisy\nIBM, 97\nKemal Ebcioglu,\nErik Altman"
+  }
+  
+  node: {
+    title: "BOA"
+    label: "BOA\nIBM, 99\nErik Altman,\nM. Gschwind,\nS. Sathaye,\nS. Kosonocky et al"
+  }
+
+  node: {
+    title: "MAJC"
+    label: "MAJC\nSun, 99\nMarc Tremblay et al"
+  }
+  
+  node: {
+    title: "tcc"
+    label: "`C & tcc\nMIT, 95-99\nMissimiliano Poletto,\nWilson C. Hsieh,\nDawson Engler,\nM. Frans Kaashoek"
+  }
+  
+  node: {
+    title: "Transmeta"
+    label: "Code Morphing\nTransmeta"
+  }
+  
+  node: {
+    title: "DynamoRIO"
+    label: "DynamoRIO\nHP/MIT collab."
+  }
+  
+  node: {
+    title: "Mojo"
+    label: "Mojo\nMS Research\nWen-Ke Chen,\nSorin Lerner,\nRonnie Chaiken,\nDavid Gillies"
+  }
+  
+  node: {
+    title: "Jalapeno"
+    label: "Jalapeno/Jikes\nIBM, 97\nBowen Alpern,\nAnthony Cocchi,\nDerek Lieber,\nMark Mergen,\nVivek Sarkar"
+  }
+  
+  node: {
+    title: "Embra"
+    label: "Embra\nStanford, 96\nEmmett Witchell,\nMendel Rosenblum"
+  }
+
+  node: {
+    title: "VMware"
+    label: "VMware\nVMware inc., 99\nMendel Rosenblum et al"
+  }
+  
+  node: {
+    title: "HCO"
+    label: "HCO\nDEC, 96\nRobert Cohn,\nP. Geoffrey Lowney"
+  }
+  
+  node: {
+    title: "Deco"
+    label: "Deco\nHarvard\nMichael D. Smith,\nOmri Traub"
+  }
+  
+  node: {
+    title: "Morph"
+    label: "Morph\nHarvard, 97\nXiaolan Zhang,\nZheng Wang,\nNicholas Gloy,\nJ. Bradley Chen,\nMichael D. Smith"
+  }
+  
+  node: {
+    title: "Fabius"
+    label: "Fabius\nCMU, 95\nMark Leone,\nPeter Lee"
+  }
+  
+  node: {
+    title: "FX!32"
+    label: "Digital FX!32\nDEC, 97\nRaymond J. Hookway,\nMark A. Herdeg"
+  }
+  
+  node: {
+    title: "Hotspot"
+    label: "Sun 'Hotspot' Java VM"
+  }
+  
+  node: {
+    title: "Etch"
+    label: "Etch\nU. Washington, 97\nTed Romer,\nGeoff Voelker,\nDennis Lee,\nBrad Chen et al"
+  }
+  
+  node: {
+    title: "Spike"
+    label: "Spike\nCompaq, 97\nRichard Flower,\nChi-Keung Luk,\nRobert Muth,\nHarish Patel,\nJohn Shakshober,\nRobert Cohn,\nP. Geoffrey Lowney"
+  }
+  
+  node: {
+    title: "Alto"
+    label: "Alto\nCompaq, 99\nRobert Muth,\nSauma Debray,\nScott Watterson"
+  }
+  
+  node: {
+    title: "Wiggins/Redstone"
+    label: "Wiggins/Redstone\nCompaq, 99\nDean Deaver,\nRick Gorton,\nNorm Rubin"
+  }
+  
+  node: {
+    title: "CaseForRuntime"
+    label: "A case for runtime code generation\nU. Washington, 91\nDavid Keppel,\nSusan J. Eggers,\nRobert R. Henry"
+  }
+  
+  edge: {
+    sourcename: "CaseForRuntime"
+    targetname: "tcc"
+  }
+  
+  edge: {
+    sourcename: "CaseForRuntime"
+    targetname: "Fabius"
+  }
+  
+  edge: {
+    sourcename: "Embra"
+    targetname: "VMware"
+  }
+  
+  edge: {
+    sourcename: "Shade"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "ConteSathaye95"
+    targetname: "Daisy"
+  }
+  
+  edge: {
+    sourcename: "Daisy"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "Daisy"
+    targetname: "BOA"
+  }
+  
+  edge: {
+    sourcename: "Hotspot"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "Hotspot"
+    targetname: "MAJC"
+  }
+  
+  edge: {
+    sourcename: "Shade"
+    targetname: "Daisy"
+  }
+  
+  edge: {
+    sourcename: "Shade"
+    targetname: "Fabius"
+  }
+    
+  edge: {
+    sourcename: "Shade"
+    targetname: "Transmeta"
+  }
+  
+  edge: {
+    sourcename: "Embra"
+    targetname: "tcc"
+  }
+    
+  edge: {
+    sourcename: "Embra"
+    targetname: "Transmeta"
+  }
+  
+  edge: {
+    sourcename: "Embra"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "tcc"
+    targetname: "Fabius"
+  }
+
+  edge: {
+    sourcename: "Fabius"
+    targetname: "tcc"
+  }
+  
+  edge: {
+    sourcename: "Daisy"
+    targetname: "Transmeta"
+  }
+  
+  edge: {
+    sourcename: "tcc"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "Dynamo"
+    targetname: "Transmeta"
+  }
+  
+  edge: {
+    sourcename: "Dynamo"
+    targetname: "DynamoRIO"
+  }
+  
+  edge: {
+    sourcename: "Dynamo"
+    targetname: "Mojo"
+  }
+  
+  edge: {
+    sourcename: "Dynamo"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "FX!32"
+    targetname: "Dynamo"
+  }
+  
+  edge: {
+    sourcename: "Daisy"
+    targetname: "Morph"
+  }
+  
+  edge: {
+    sourcename: "Hotspot"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "Hotspot"
+    targetname: "Jalapeno"
+  }
+    
+  edge: {
+    sourcename: "FX!32"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "FX!32"
+    targetname: "Morph"
+  }
+  
+  edge: {
+    sourcename: "HCO"
+    targetname: "FX!32"
+  }
+  
+  edge: {
+    sourcename: "HCO"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "Jalapeno"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "Spike"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "Morph"
+    targetname: "Deco"
+  }
+  
+  edge: {
+    sourcename: "HCO"
+    targetname: "Spike"
+  }
+
+  edge: {
+    sourcename: "HCO"
+    targetname: "Morph"
+  }
+  
+  edge: {
+    sourcename: "Etch"
+    targetname: "Morph"
+  }
+  
+  edge: {
+    sourcename: "Spike"
+    targetname: "Wiggins/Redstone"
+  }
+  
+  edge: {
+    sourcename: "Spike"
+    targetname: "Alto"
+  }
+  
+  edge: {
+    sourcename: "Alto"
+    targetname: "Wiggins/Redstone"
+  }
+}

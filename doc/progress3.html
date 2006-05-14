@@ -1,0 +1,92 @@
+<html>
+<head>
+<title>Progress Report, March 2002</title>
+</head>
+<body>
+
+<center><h1>Progress Report, March 2002</h1></center>
+
+<h3>Information</h3>
+
+<p>I, Julian Brown, am approximately 18 months into my Ph.D.. I have been in the Languages and Architecture group for about 12 months. My supervisor is Prof. David May.
+
+<h3>Last six months</h3>
+
+<ul>
+<li>Read up on (RISC-oriented) chip design (ie, H+P)
+<li>Built (most of) a simulator capable of running a Linux kernel. Might be useful for gathering statistics & traces of real (embedded) machine workloads.
+<li>Attempted to summarise existing work on dynamic optimisation
+<li>Identified problems with my dynamic optimisation architecture
+<li>Investigated various tenuously related projects (Valgrind, ...)
+</ul>
+
+<h3>Next six months</h3>
+
+<ul>
+<li>Build library of suitable candidate programs for investigating dynamic optimisation techniques & ideas with
+<li>Look at some instruction traces (from an existing ISA, probably)
+<li>Re-design ISA based on ideas gleaned from existing dynamic optimisation work (superblocks?)
+<li>Write a backend to GCC supporting new ISA
+<li>Try to obtain some useful results
+</ul>
+
+<h2>Quickspace architecture</h2>
+
+<p><i>"Almost all programming can be viewed as an exercise in caching"</i> - Terje Mathisen
+
+<p>There were some problems with the previous iteration of the dynamic optimisation architecture I proposed, <i>Chameleon</i> (and that name was already taken). Thus, a new architecture, with a new name, is proposed, at least in a sketchy outline form as described below.
+
+<p>Various dynamic optimisation techniques have already been successfully employed by software-only approaches. The challenge we face is reducing the overhead of such systems by throwing hardware at them, to the point where no programs (or at worst, few programs) suffer performance degradation due to the presence of the dynamic optimisation system. The most pressing concern addressed by dynamic optimisation appears to be alleviating problems associated with <b>memory latency</b>, either directly or indirectly. The current trend is for such problems to become worse over time. The most serious concern with the dynamic optimisers themselves is the overheads involved in <b>gathering profile information</b>.
+
+<p>The Chameleon architecture as previously described would unfortunately kill the most important optimisation found by dynamic optimisation work to date, which is essentially performing the same work as a hardware trace processor, in software. This technique is called by various names, I will call it "hot trace flattening". The basic idea is to ensure that in the common case, all code bought into the instruction cache is executed. This should be particularly important for the "spaghetti GUI" style of code which traditional optimisation deals with so badly.
+
+<h3>Superblocks</h3>
+
+<p>The first problem is designing an architecture with the benefits of Chameleon with respect to code malleability, but without the lack of ability to generate flat traces with good caching potential. To this end, I propose moving away from basic blocks, and instead using <i>superblocks</i>, which are sections of code with a single entry point and multiple exit points. This means that common-case code can be made into a cache-happy contiguous block, though it necessitates adding ordinary branch instructions to the Quickspace architecture. It is still anticipated that superblocks will be referred to by handles rather than pointers.
+
+<h3>Memory access tags</h3>
+
+<p>I propose adding a field to each memory access instruction indicating some metadata about that memory access, to enable memory accesses to be eliminated without needing to calculate the semantics of the surrounding code in an in-depth (time consuming) way. For example, we must never remove loads/stores into I/O space (assuming memory-mapped I/O), but there shouldn't be a problem in eliminating stack pushes/pops <i>in some cases</i>, if we decide to inline a particular function at run-time and want to eliminate its stack-frame code. So the annotations will say whether each memory access is "important" to the semantics of the program, or whether it can be safely removed.
+
+<p>For instance, if four tag values were available, the meanings might be:
+
+<ol>
+<li>Known non-volatile
+<li>Volatile, colour 1
+<li>Volatile, colour 2
+<li>Code space (or maybe cache bypass)
+</ol>
+
+<p>The "colour" is explained below. "Code space" writes might be useful in the presence of seriously self-modifying code, writing through the instruction cache (this operation is obviously not normally available). Stack accesses might be marked as known non-volatile in leaf functions which don't take the address of any their stack variables.
+
+<h3>Type information</h3>
+
+<p>It's could also be useful to store some sort of crude type information about register meanings at various points in a program (function entry?). This could be as simple as whether a register refers to a scalar quantity, is a pointer to an area of memory of a particular size, or perhaps "something more complicated" which shouldn't be messed with (eg, pointer to function, pointer to pointer). This might be important to enable some types of optimisation (CSE?) to be performed quickly and more importantly, safely, in the absence of source code.
+
+<h3>User-space memory range protection</h3>
+
+<p>Coupled with the type information described in the previous section, we could solve some aliasing problems in languages like C by opportunistically creating specialised versions of functions which assume that their (pointer) arguments have been declared with the equivalent of the C99 "restrict" modifier, so that in functions like this:
+
+<pre>
+  void inner(float a[], float b[], int size)
+  {
+    int i;
+    for (i=0; i &lt; size; i++)
+    {
+      a[i] = a[i] * b[i];
+    }
+  }
+</pre>
+
+<p>If we know that the arrays "a" and "b" do not overlap, it enables us to unroll the loop and reorder loads and stores in a more efficient way, use vector instructions, etc. without worrying about whether we're breaking the semantics of the program. If we have memory range protection registers, we could protect the range pointed to by "b" at the start of a specialised version of the function, and throw an exception (which should be handled in user space, and return control immediately to a non-specialised version of the function) if the assignment overwrites any of that area.
+
+<p>This seems to be such a simple idea that there must be some problem with it though, else everybody would be doing it. In fact, IA-64 "data speculative loads" are quite similar -- they allow a load to be split into two parts, the first of which is moved as early as possible to hide memory latency, the second of which (check instruction) is placed after any intervening store instructions but before the loaded value is used. If none of the store instructions wrote to the same address, the check instruction is a no-op, else it reloads the value. IA-64 uses a hardware table to track addresses of loads. The same idea is implemented by IBM's Daisy and HP's Dynamo.
+
+<p>For functions (loops) with more than one write, we could perhaps employ some additional memory access tags (as above) to "colour" the writes, so only one colour of store is allowed to access a particular range.
+
+<h3>Profiling</h3>
+
+<p>The Wiggins-Redstone project (an unpublished dynamic optimisation system) has obtained good results by sampling the program counter, and assuming that its current location is "hot". This can be done with very low overhead, but perhaps we can obtain better results by running profiling concurrently, perhaps using a second, lower-power processor or some other hardware solution. The former idea has been suggested by others, but as far as I know not tested.
+
+</body>
+</html>
