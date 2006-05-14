@@ -1,0 +1,532 @@
+CHAMELEON ARCHITECTURE DEFINITION
+=================================
+
+All information subject to change.
+
+
+-- 0. Introduction
+
+
+
+This document describes an instruction-set architecture meant to allow easy automatic analysis and run-time optimisation of code. To this end, certain considerations have been taken into account.
+
+1. It is anticipated that code will be created, destroyed, resized, shuffled around, shrunk and generally messed around with a great deal. It's important to be able to keep track of code, whilst minimising the impact of performing such operations, and keeping the amount of space used by a program within a certain bound. So, we do away with the traditional model of "flat" code containing conditional and unconditional branch instructions for control flow, and replace it with a graph-like basic block structure. This will bring additional advantages with respect to code analysis. References, rather than pointers, are expected to form the links between these basic blocks. Garbage collection may be implemented in hardware.
+
+2. Condition codes. Each machine register has a few "metadata" bits, which are used to contain the results of operations which cause carry or overflow. This avoids the problems of having a single, global condition code register with respect to instruction scheduling & reordering. The metadata concept might be extended so that certain information about the operations which have been done on a value (for instance) are carried along with that value, perhaps if we have hardware to assist specific types of program analysis.
+
+3. Profiling in hardware. To start with, mostly frequency counters for "true" vs "false" paths taken. Profile information is written back into the program's block structure, rather than stored in on-chip buffers (possibly). (An actual implementation would probably use a secondary type of instruction cache for this structure).
+
+4. Simple instruction semantics. For the human reader, there will be no hidden side effects, as per for instance the x86 multiply & divide instructions. For automatic analysis, instructions for the most part perform one simple operation, encoded in a simple way (in the RISC style), except where doing otherwise would cause unacceptable code expansion (multi-word load & store).
+
+
+
+-- 1. Code structure
+
+
+
+Code is organised into basic blocks (sections of straight-line code), which are indexed by a dispatch table. Each block has a type, which indicates how control flow leaves the block after it is executed, and also includes some meta-data for use in optimisation.
+
+It's possible that some tagging scheme might be used for blocks, so that an arbitrary amount of data can be stored rather than using a completely fixed layout, which might improve code size but will complicate things a lot (particularly for hardware).
+
+The block layout as shown below doesn't include any profiling information. Stuff such as frequency of X,Y blocks taken can be included in the block header (and the information gathered using hardware?)
+
+Data are organised into 'objects', which are indexed by the same mechanism. Code must be garbage collected, so it makes sense to allow data to be garbage collected too, although this might lead to interoperability problems with existing languages & architectures.
+
+Index format: an array of
+
+  +---------------------------+
+  | Block type      | 32 bits |
+  | Start address   | 32 bits |
+  | Reference count | 32 bits |
+  | (padding)       | 32 bits |
+  +---------------------------+
+
+Block formats: (first 96 bits are the same for both)
+
+Code block:
+
+  +------------------------------------------+
+  | Block type [1]                 | 32 bits |
+  | Offset to code                 | 32 bits |
+  | Code length                    | 32 bits |
+  | Live-at-start register bitmap  | 64 bits |
+  | Live-at-end register bitmap    | 64 bits |
+  | X-block reference              | 32 bits |
+  | Y-block reference              | 32 bits |
+  | ..code..                       | variable|
+  +------------------------------------------+
+
+Data block:
+
+  +----------------------------+
+  | Block type      | 32 bits  |
+  | Offset to data  | 32 bits  |
+  | Data length     | 32 bits  |
+  | ..data..        | variable |
+  +----------------------------+
+
+[1] Code block type: (needs work!)
+
+  +-----------------------------+
+  | Data/code         | 1 bit   |
+  | Transfer [2]      | 3 bits  |
+  | Funcstart         | 1 bit   | \
+  | Funcend           | 1 bit   |  |_ don't know if these are sensible...
+  | Loopstart         | 1 bit   |  |
+  | Loopend           | 1 bit   | /
+  | Register [3]      | 6 bits  |
+  | Unused            | 18 bits |
+  +-----------------------------+
+
+[2] Transfer types
+
+  0x0: Fork
+  ---------
+  
+  Execute X-block if register [3] is non-zero, Y-block otherwise
+  
+  0x1: Call
+  ---------
+  
+  Copy Y-block reference to link register, execute X-block
+  
+  0x2: Jump
+  ---------
+  
+  Execute X-block, Y-block ignored
+  
+  0x3: Call indirect
+  ------------------
+  
+  Copy Y-block reference to link register. Execute block referenced by register [3].
+  
+  0x4: Jump indirect
+  ------------------
+  
+  Execute block referenced by register [3]. X,Y-block references ignored.
+  
+  0x5: Return
+  -----------
+  
+  Execute block referenced by link register. X,Y-block references ignored.
+
+  Other values: undefined
+
+
+
+-- 2. Instruction formats
+
+
+
+Type 1: arithmetic/logic operations, op2=register
+
+ (op) Rd,[expire] Rm,[expire] Rn
+
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|I|n|m|#|#|#|#|#|N|N|N|N|N|N|M|M|M|M|M|M|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   I = immediate (zero)
+   n = expire Rn
+   m = expire Rm
+   # = unused
+   N = Rn
+   M = Rm
+   D = Rd
+
+ 
+Type 2: arithmetic/logic operations, op2=immediate
+
+ (op) Rd,[expire] Rm,#immediate
+ 
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|I|m|r|r|r|r|i|i|i|i|i|i|i|i|M|M|M|M|M|M|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   I = immediate (one)
+   m = expire Rm
+   r = rotation (*2, to the right)
+   i = immediate
+   M = Rm
+   D = Rd
+
+
+Types 1+2: opcodes
+
+  0x00: Mov
+  ---------
+  
+  Copy Rm/immediate to Rd
+  
+  0x01: Not
+  ---------
+  
+  Copy bitwise not of Rm/immediate to Rd
+  
+  0x02: Lsl
+  ---------
+  
+  Shift Rn left by (bottom five bits of) Rm/immediate, result in Rd, last shifted-out bit in Rd.carry. Carry-update behaviour of this and following instructions may be removed.
+  
+  0x03: Lsr
+  ---------
+  
+  Shift Rn right (logical) by (bottom five bits of) Rm/immediate, result in Rd, last shifted-out bit in Rd.carry
+  
+  0x04: Asr
+  ---------
+  
+  Shift Rn right (sign-extending) by (bottom five bits of) Rm/immediate, result in Rd, last shifted-out bit in Rd.carry
+  
+  0x05: Ror
+  ---------
+  
+  Rotate Rn right by (bottom five bits of) Rm/immediate, result in Rd, last shifted-out bit in Rd.carry
+  
+  0x06: Rrx
+  ---------
+  
+  Rotate Rn right, extended from carry bit of Rm to carry bit of Rd, result in Rd. Probably of limited use, may be removed.
+  
+  0x07: And
+  ---------
+  
+  Bitwise AND of Rm/immed and Rn, result in Rd
+  
+  0x08: Or
+  --------
+  
+  Bitwise OR of Rm/immed and Rn, result in Rd
+  
+  0x09: Eor
+  ---------
+  
+  Bitwise exclusive-OR of Rm/immed and Rn, result in Rd
+  
+  0x0a: Bic
+  ---------
+  
+  Bitwise AND of Rn and bitwise-not(Rm/immed), result in Rd
+  
+  0x0b: Add
+  ---------
+  
+  Addition of Rm/immed and Rn, result in Rd, carry/overflow in Rd.{carry,overflow}
+  
+  0x0c: Adc
+  ---------
+  
+  Addition of Rn and Rm.carry, result in Rd, carry/overflow in Rd.{carry,overflow)
+  
+  0x0d: Sub
+  ---------
+  
+  Subtraction of Rn and Rm/immed, result/carry (not borrow)/overflow in Rd.*
+  
+  0x0e: Sbc
+  ---------
+  
+  Subtract not(Rm.carry) from Rn, result in Rd.*
+  
+  0x0f: Rsb
+  ---------
+  
+  Rm/immed. - Rn, result in Rd.*
+  
+  0x10: Rsc
+  ---------
+  
+  Rm/immed - not(Rn.carry), result in Rd.*. This looks fairly useless, actually, but keeps things symmetric... will probably be removed
+
+  0x12: Mul
+  ---------
+  
+  Multiply
+  
+  0x13: Umul
+  ----------
+  
+  Unsigned multiply. Will be removed, since it's the same as signed multiply for 32*32->32 bits.
+  
+  0x14: Div
+  ---------
+  
+  Divide
+  
+  0x15: Udiv
+  ----------
+  
+  Unsigned divide
+  
+  0x16: Mod
+  ---------
+  
+  Modulus
+  
+  0x17: Umod
+  ----------
+  
+  Unsigned modulus. (Not sure if this is worth keeping)
+
+
+Type 3: comparison operations
+
+ cmp.(cond) Rd,[expire] Rm,[expire] Rn
+ 
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|I|n|m|c|c|c|c|#|N|N|N|N|N|N|M|M|M|M|M|M|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+
+   O = opcode
+   I = immediate (zero)
+   n = expire Rn
+   m = expire Rm
+   c = condition field
+   N = Rn
+   M = Rm
+   D = Rd
+
+Condition field:
+
+  0x0: Eq (equal)
+  ---------------
+  
+  Rd = -1 if Rm==Rn, 0 otherwise
+  
+  0x1: Ge (greater-than or equal)
+  -------------------------------
+  
+  Rd = -1 if Rm>=Rn, 0 otherwise
+  
+  0x2: Gt (greater-than)
+  ----------------------
+  
+  Rd = -1 if Rm>Rn, 0 otherwise
+  
+  0x3: Hi (unsigned higher-than)
+  ------------------------------
+  
+  Rd = -1 if Rm > Rn (unsigned), 0 otherwise
+  
+  0x4: Mi (negative)
+  ------------------
+  
+  Rd = -1 if cond, 0 otherwise
+  
+  0x5: Vs (overflow)
+  ------------------
+  
+  Rd = -1 if Rm-Rn overflows, 0 otherwise
+  
+  0x6: Mc (move-carry)
+  --------------------
+  
+  Rd = -1 if Rm.carry set, 0 otherwise
+  
+  0x7: Mv (move-overflow)
+  -----------------------
+  
+  Rd = -1 if Rm.overflow set, 0 otherwise
+
+Opcode:
+
+  0x11: Cmp
+  ---------
+  
+  Compare
+  
+
+Type 4: single-data transfer operations, base+register offset
+
+ (op).[s](w) [expire] Rd,"[" [expire] Rb, [expire] Ri "*" scale "]"
+ 
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|I|b|w|w|S|n|s|s|I|I|I|I|I|I|B|B|B|B|B|B|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   I = immediate offset (zero)
+   b = expire Rb
+   w = width (0x0 = byte, 0x1 = halfword, 0x2 = word, 0x3 = tag bits)
+   S = sign extend
+   n = expire Ri
+   s = scale (0x0 = 1, 0x1 = 2, 0x2 = 4, 0x3 = 8)
+   I = Ri
+   B = Rb
+   D = Rd
+
+
+Type 5: single-data transfer operations, base+immediate offset
+
+ (op).[s](w) [expire] Rd,"[" [expire] Rb, "#" imm "]"
+ 
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|I|b|w|w|S|F|F|F|F|F|F|F|F|F|B|B|B|B|B|B|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   I = immediate offset (one)
+   b = expire Rb
+   w = width
+   S = sign extend
+   F = offset (actual offset = offset * sizeof(width))
+   B = Rb
+   D = Rd
+
+Types 4+5: opcodes
+
+  0x1a: Ldd
+  ---------
+  
+  Load data
+  
+  0x1b, 0x1c: Stdx, Std
+  ---------------------
+  
+  Store data (stdx expiring Rd)
+  
+  0x1d: Ldi
+  ---------
+  
+  Load instruction
+  
+  0x1e, 0x1f: Sti, Stix
+  ---------------------
+  
+  Store instruction (stix expiring Rd)
+
+
+Type 6: Multiple data transfer
+
+ (op).(d)(a) Rb[!],{Rs-Re}
+
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|W|U|B|#|#|#|#|#|e|e|e|e|e|e|s|s|s|s|s|s|B|B|B|B|B|B|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   W = writeback
+   U = up/down
+   B = before/after
+   # = unused
+   e = end of range (inclusive)
+   s = start of range (inclusive)
+   B = base address
+   
+Opcodes:
+
+  0x20: Ldm
+  ---------
+  
+  Load multiple. Allows base register writeback, pre/post increment/decrement, pretty much identical to the ARM. Good for stack manipulation.
+  
+  0x21: Stm
+  ---------
+  
+  Store multiple
+
+
+Type 7: Bit field operations
+
+ bfx[.s] Rd, [expire] Rm <s-e>
+ bfi Rd <s-e>, [expire] Rm
+
+ +---------------------------------------------------------------+
+ |O|O|O|O|O|O|d|m|S|#|e|e|e|e|e|s|s|s|s|s|M|M|M|M|M|M|D|D|D|D|D|D|
+ +---------------------------------------------------------------+
+ 
+   O = opcode
+   d = expire Rd  (??)
+   m = expire Rm
+   S = sign extend
+   # = unused
+   e = end of range, inclusive
+   s = start of range, inclusive
+   M = Rm
+   D = Rd
+
+Opcodes:
+
+  0x18: Bfi
+  ---------
+  
+  Bitfield insert low bits of Rm to bits s-e of Rd
+  
+  0x19: Bfx
+  ---------
+  
+  Bitfield extract bits s-e of Rm to Rd, can sign-extend
+
+
+
+-- 3. Register map
+
+
+
+Registers are mapped (some just by convention?) to the following meanings:
+
+  r0: wired to zero  (? Probably not, since we can have zero immediates anyway)
+  r1-r4: caller-saved function arguments (r1 result for integer-returning fns)
+  r5-r58: general purpose
+  r59: static data pointer
+  r60: stack pointer
+  r61: frame pointer
+  r62: link reference
+  r63: current block reference
+
+There is an implicit program counter, which may not be directly manipulated since this could break the ability to move code around?
+
+It's not entirely decided how any exception-handling mechanism should work (interrupts, etc). The main point would be to ensure that nothing is so horrendously broken as to preclude one of reasonable simplicity, rather than necessarily actually implement it.
+
+
+
+-- 4. Example code
+
+
+
+This code demonstrates a section of code which will fill a 100x100 square at the top-left of a 320-byte wide buffer starting at memory address 102400, which is assumed to be large enough to contain such a thing. Not all features of the architecture are demonstrated, this was just written to test the assembler...
+
+Notice that the use of block structure does not impact the appearance of the assembler code tremendously. The main difference in fact is that control flow is never assumed to "fall through", so explicit jumps are needed, eg between y_start and x_start.
+
+
+--------
+
+_y_start:
+        mov r7,#102400
+        mov r5,#0
+        jump _x_start
+
+_x_start:
+        mov r6,#0
+        jump _x_body
+
+_x_body:
+        mov r1,r7
+        mov r2,r6
+        mov r3,r5
+        mov r4,#15
+        call _putpixel link _x_end
+
+_x_end:
+        add r6,r6,#1
+        mov r8,#100
+        cmp.gt r9,r6,r8
+        on r9 _y_end else _x_body
+
+_y_end:
+        add r5,r5,#1
+        cmp.gt r9,x r5,x r8
+        on r9 _done else _x_start
+
+_done:
+        jump _done
+
+_putpixel:
+        mul r10,x r3,#320
+        add r10,x r10,x r2
+        std.b x r4,[x r1, x r10 * 1]
+        ret
+
+--------

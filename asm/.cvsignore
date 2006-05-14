@@ -1,0 +1,5 @@
+*.d
+lex.yy.c
+chipmunk-as
+*.tab.h
+*.tab.c
