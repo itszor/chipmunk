@@ -1,0 +1,1 @@
+doptest.o: doptest.chs
