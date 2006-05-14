@@ -1,0 +1,6 @@
+*.cmi *.cmo *.cmx *.d
+dump*.dot
+rules.out
+asmlex.ml rulelex.ml
+x86parse.ml x86tok.ml
+rules.ml

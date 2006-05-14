@@ -1,0 +1,319 @@
+-- Ocamlburg grammar for turning AST expressions into instructions.
+-- The AST seems too expressive; maybe we will need another intermediate form
+-- just for pattern matching.
+
+%term int_insn float_insn int
+
+%%
+
+void : Move(d:intreg, m:intreg)            [1]
+                                   {: <:asm< mov `rd, `rm >> :}
+                                   
+-- NOT instruction
+void : Move(d:intreg, Unop(Not, m:intreg)) [1]
+                                   {: <:asm< not `rd, `rm >> :}
+
+intreg : Unop(Not, m:intreg) [2]   {: let t = itmp () in
+                                      t, <:asm< not `rt, `rm, `rn >> :}
+
+-- LSL instruction
+void : Move(d:intreg, Binop(Lsl, m:intreg, n:intreg)) [1]
+                                   {: <:asm< lsl `rd, `rm, `rn >> :}
+
+intreg : Binop(Lsl, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< lsl `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Lsl, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< lsl `rd, `rm, `#c >> :}
+
+intreg : Binop(Lsl, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< lsl `rt, `rm, `#c >> :}
+
+-- LSR instruction
+void : Move(d:intreg, Binop(Lsr, m:intreg, n:intreg)) [1]
+                                   {: <:asm< lsr `rd, `rm, `rn >> :}
+
+intreg : Binop(Lsr, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< lsr `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Lsr, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< lsr `rd, `rm, `#c >> :}
+
+intreg : Binop(Lsr, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< lsr `rt, `rm, `#c >> :}
+
+-- ASR instruction
+void : Move(d:intreg, Binop(Asr, m:intreg, n:intreg)) [1]
+                                   {: <:asm< asr `rd, `rm, `rn >> :}
+
+intreg : Binop(Asr, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< asr `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Asr, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< asr `rd, `rm, `#c >> :}
+
+intreg : Binop(Asr, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< asr `rt, `rm, `#c >> :}
+
+-- ROR instruction
+void : Move(d:intreg, Binop(Ror, m:intreg, n:intreg)) [1]
+                                   {: <:asm< ror `rd, `rm, `rn >> :}
+
+intreg : Binop(Ror, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< ror `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Ror, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< ror `rd, `rm, `#c >> :}
+
+intreg : Binop(Ror, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< ror `rt, `rm, `#c >> :}
+
+-- AND instruction
+void : Move(d:intreg, Binop(And, m:intreg, n:intreg)) [1]
+                                   {: <:asm< and `rd, `rm, `rn >> :}
+
+intreg : Binop(And, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< and `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(And, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< and `rd, `rm, `#c >> :}
+
+intreg : Binop(And, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< and `rt, `rm, `#c >> :}
+
+void : Move(d:intreg, Binop(And, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< and `rd, `rm, `#c >> :}
+
+intreg : Binop(And, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< and `rt, `rm, `#c >> :}
+
+-- IOR instruction
+void : Move(d:intreg, Binop(Ior, m:intreg, n:intreg)) [1]
+                                   {: <:asm< ior `rd, `rm, `rn >> :}
+
+intreg : Binop(Ior, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< ior `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Ior, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< ior `rd, `rm, `#c >> :}
+
+intreg : Binop(Ior, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< ior `rt, `rm, `#c >> :}
+
+void : Move(d:intreg, Binop(Ior, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< ior `rd, `rm, `#c >> :}
+
+intreg : Binop(Ior, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< ior `rt, `rm, `#c >> :}
+
+-- EOR instruction
+void : Move(d:intreg, Binop(Eor, m:intreg, n:intreg)) [1]
+                                   {: <:asm< eor `rd, `rm, `rn >> :}
+
+intreg : Binop(Eor, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< eor `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Eor, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< eor `rd, `rm, `#c >> :}
+
+intreg : Binop(Eor, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< eor `rt, `rm, `#c >> :}
+
+void : Move(d:intreg, Binop(Eor, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< eor `rd, `rm, `#c >> :}
+
+intreg : Binop(Eor, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< eor `rt, `rm, `#c >> :}
+
+-- BIC instruction
+void : Move(d:intreg, Binop(Bic, m:intreg, n:intreg)) [1]
+                                   {: <:asm< bic `rd, `rm, `rn >> :}
+
+intreg : Binop(Bic, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< bic `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Bic, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< bic `rd, `rm, `#c >> :}
+
+intreg : Binop(Bic, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< bic `rt, `rm, `#c >> :}
+
+
+-- ADD instruction
+void : Move(d:intreg, Binop(Add, m:intreg, n:intreg)) [1]
+                                   {: <:asm< add `rd, `rm, `rn >> :}
+
+intreg : Binop(Add, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< add `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Add, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< add `rd, `rm, `#c >> :}
+
+intreg : Binop(Add, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< add `rt, `rm, `#c >> :}
+
+void : Move(d:intreg, Binop(Add, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< add `rd, `rm, `#c >> :}
+
+intreg : Binop(Add, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< add `rt, `rm, `#c >> :}
+
+-- SUB instruction
+void : Move(d:intreg, Binop(Sub, m:intreg, n:intreg)) [1]
+                                   {: <:asm< sub `rd, `rm, `rn >> :}
+
+intreg : Binop(Sub, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< sub `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Sub, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< sub `rd, `rm, `#c >> :}
+
+intreg : Binop(Sub, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< sub `rt, `rm, `#c >> :}
+
+-- RSB instruction
+void : Move(d:intreg, Binop(Sub, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< rsb `rd, `rm, `#c >> :}
+
+intreg : Binop(Sub, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< rsb `rt, `rm, `#c >> :}
+
+-- MUL instruction
+void : Move(d:intreg, Binop(Mul, m:intreg, n:intreg)) [1]
+                                   {: <:asm< mul `rd, `rm, `rn >> :}
+
+intreg : Binop(Mul, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< mul `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Mul, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< mul `rd, `rm, `#c >> :}
+
+intreg : Binop(Mul, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< mul `rt, `rm, `#c >> :}
+
+void : Move(d:intreg, Binop(Mul, c:dataimm, m:intreg)) [1]
+                                   {: <:asm< mul `rd, `rm, `#c >> :}
+
+intreg : Binop(Mul, c:dataimm, m:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< mul `rt, `rm, `#c >> :}
+
+-- DIV instruction
+void : Move(d:intreg, Binop(Div, m:intreg, n:intreg)) [1]
+                                   {: <:asm< div `rd, `rm, `rn >> :}
+
+intreg : Binop(Div, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< div `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Div, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< div `rd, `rm, `#c >> :}
+
+intreg : Binop(Div, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< div `rt, `rm, `#c >> :}
+
+-- UDIV instruction
+void : Move(d:intreg, Binop(Udiv, m:intreg, n:intreg)) [1]
+                                   {: <:asm< udiv `rd, `rm, `rn >> :}
+
+intreg : Binop(Udiv, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< udiv `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Udiv, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< udiv `rd, `rm, `#c >> :}
+
+intreg : Binop(Udiv, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< udiv `rt, `rm, `#c >> :}
+
+-- MOD instruction
+void : Move(d:intreg, Binop(Mod, m:intreg, n:intreg)) [1]
+                                   {: <:asm< mod `rd, `rm, `rn >> :}
+
+intreg : Binop(Mod, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< mod `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Mod, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< mod `rd, `rm, `#c >> :}
+
+intreg : Binop(Mod, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< mod `rt, `rm, `#c >> :}
+
+-- UMOD instruction
+void : Move(d:intreg, Binop(Umod, m:intreg, n:intreg)) [1]
+                                   {: <:asm< umod `rd, `rm, `rn >> :}
+
+intreg : Binop(Umod, m:intreg, n:intreg) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< umod `rt, `rm, `rn >> :}
+
+void : Move(d:intreg, Binop(Umod, m:intreg, c:dataimm)) [1]
+                                   {: <:asm< umod `rd, `rm, `#c >> :}
+
+intreg : Binop(Umod, m:intreg, c:dataimm) [2]
+                                   {: let t = itmp () in
+                                      t, <:asm< umod `rt, `rm, `#c >> :}
+
+-- MVC instruction (??)
+
+-- MOVF instruction (??)
+-- ADDF instruction (??)
+-- SUBF instruction (??)
+-- MULF instruction (??)
+-- DIVF instruction (??)
+-- other float instructions (??)
+
+-- MVC.EH instruction
+void : Move(d:intreg, c:ehimm) [1] {: <:asm< mvc.eh `rd,`#c >> :}
+intreg : c:ehimm [2]               {: let t = itmp () in
+                                      t, <:asm< mvc.eh `rt,`#c >> :}
+
+-- MVC.EL instruction
+void : Move(d:intreg, c:elimm) [1] {: <:asm< mvc.el `rd,`#c >> :}
+intreg : c:elimm [2]               {: let t = itmp () in
+                                      t, <:asm< mvc.el `rt,`#c >> :}
+
+-- MVC.FH instruction
+void : Move(d:intreg, c:fhimm) [1] {: <:asm< mvc.fh `rd,`#c >> :}
+intreg : c:fhimm [2]               {: let t = itmp () in
+                                      t, <:asm< mvc.fh `rt,`#c >> :}
+
+-- MVC.FL instruction
+void : Move(d:intreg, c:flimm) [1] {: <:asm< mvc.fl `rd,`#c >> :}
+intreg : c:flimm [2]               {: let t = itmp () in
+                                      t, <:asm< mvc.fl `rt,`#c >> :}
+
+-- register
+intreg : IntReg(x:int) [0]         {: x :}
+
