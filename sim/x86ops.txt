@@ -1,0 +1,303 @@
+# Intel instruction encoding, extracted from architecture ref manual
+
+04 ib          |ADD AL,imm8
+0C ib          |OR AL,imm8
+14 ib          |ADC AL,imm8
+1C ib          |SBB AL,imm8
+24 ib          |AND AL,imm8
+2C ib          |SUB AL,imm8
+34 ib          |XOR AL,imm8
+3C ib          |CMP AL,imm8
+A8 ib          |TEST AL,imm8
+
+
+05 id          |ADD EAX,imm32
+0D id          |OR EAX,imm32
+15 id          |ADC EAX,imm32
+1D id          |SBB EAX,imm32
+25 id          |AND EAX,imm32
+2D id          |SUB EAX,imm32
+35 id          |XOR EAX,imm32
+3D id          |CMP EAX,imm32
+A9 id          |TEST EAX,imm32
+
+
+80 /0 ib       |ADD r/m8,imm8
+80 /1 ib       |OR r/m8,imm8
+80 /2 ib       |ADC r/m8,imm8
+80 /3 ib       |SBB r/m8,imm8
+80 /4 ib       |AND r/m8,imm8
+80 /5 ib       |SUB r/m8,imm8
+80 /6 ib       |XOR r/m8,imm8
+80 /7 ib       |CMP r/m8,imm8
+C0 /0 ib       |ROL r/m8,imm8
+C0 /1 ib       |ROR r/m8,imm8
+C0 /2 ib       |RCL r/m8,imm8
+C0 /3 ib       |RCR r/m8,imm8
+C0 /4 ib       |SHL r/m8,imm8
+C0 /5 ib       |SHR r/m8,imm8
+C0 /7 ib       |SAR r/m8,imm8
+C6 /0 ib       |MOV r/m8,imm8
+F6 /0 ib       |TEST r/m8,imm8
+
+81 /0 id       |ADD r/m32,imm32
+81 /1 id       |OR r/m32,imm32
+81 /2 id       |ADC r/m32,imm32
+81 /3 id       |SBB r/m32,imm32
+81 /4 id       |AND r/m32,imm32
+81 /5 id       |SUB r/m32,imm32
+81 /6 id       |XOR r/m32,imm32
+81 /7 id       |CMP r/m32,imm32
+C7 /0 id       |MOV r/m32,imm32
+F7 /0 id       |TEST r/m32,imm32
+
+83 /0 ib       |ADD r/m32,imm8
+83 /1 ib       |OR r/m32,imm8
+83 /2 ib       |ADC r/m32,imm8
+83 /3 ib       |SBB r/m32,imm8
+83 /4 ib       |AND r/m32,imm8
+83 /5 ib       |SUB r/m32,imm8
+83 /6 ib       |XOR r/m32,imm8
+83 /7 ib       |CMP r/m32,imm8
+0F BA /4 ib    |BT r/m32,imm8
+0F BA /5 ib    |BTS r/m32,imm8
+0F BA /6 ib    |BTR r/m32,imm8
+0F BA /7 ib    |BTC r/m32,imm8
+C1 /0 ib       |ROL r/m32,imm8
+C1 /1 ib       |ROR r/m32,imm8
+C1 /2 ib       |RCL r/m32,imm8
+C1 /3 ib       |RCR r/m32,imm8
+C1 /4 ib       |SHL r/m32,imm8
+C1 /5 ib       |SHR r/m32,imm8
+C1 /7 ib       |SAR r/m32,imm8
+
+00 /r          |ADD r/m8,r8
+08 /r          |OR r/m8,r8
+10 /r          |ADC r/m8,r8
+18 /r          |SBB r/m8,r8
+20 /r          |AND r/m8,r8
+28 /r          |SUB r/m8,r8
+30 /r          |XOR r/m8,r8
+38 /r          |CMP r/m8,r8
+84 /r          |TEST r/m8,r8
+88 /r          |MOV r/m8,r8
+0F C0 /r       |XADD r/m8,r8
+
+01 /r          |ADD r/m32,r32
+09 /r          |OR r/m32,r32
+11 /r          |ADC r/m32,r32
+19 /r          |SBB r/m32,r32
+21 /r          |AND r/m32,r32
+29 /r          |SUB r/m32,r32
+31 /r          |XOR r/m32,r32
+39 /r          |CMP r/m32,r32
+0F A3 /r       |BT r/m32,r32
+0F AB /r       |BTS r/m32,r32
+0F B3 /r       |BTR r/m32,r32
+0F BB /r       |BTC r/m32,r32
+85 /r          |TEST r/m32,r32
+89 /r          |MOV r/m32,r32
+0F C1 /r       |XADD r/m32,r32
+
+02 /r          |ADD r8,r/m8
+0A /r          |OR r8,r/m8
+12 /r          |ADC r8,r/m8
+1A /r          |SBB r8,r/m8
+22 /r          |AND r8,r/m8
+2A /r          |SUB r8,r/m8
+32 /r          |XOR r8,r/m8
+3A /r          |CMP r8,r/m8
+86 /r          |XCHG r8,r/m8
+8A /r          |MOV r8,r/m8
+
+03 /r          |ADD r32,r/m32
+0B /r          |OR r32,r/m32
+13 /r          |ADC r32,r/m32
+1B /r          |SBB r32,r/m32
+23 /r          |AND r32,r/m32
+2B /r          |SUB r32,r/m32
+33 /r          |XOR r32,r/m32
+3B /r          |CMP r32,r/m32
+87 /r          |XCHG r32,r/m32
+8B /r          |MOV r32,r/m32
+0F AF /r       |IMUL r32,r/m32
+0F BC /r       |BSF r32,r/m32
+0F BD /r       |BSR r32,r/m32
+
+FE /0          |INC r/m8
+FE /1          |DEC r/m8
+F6 /2          |NOT r/m8
+F6 /3          |NEG r/m8
+F6 /4          |MUL r/m8
+F6 /5          |IMUL r/m8
+F6 /6          |DIV r/m8
+F6 /7          |IDIV r/m8
+
+8F /0          |POP r/m32
+F7 /2          |NOT r/m32
+F7 /3          |NEG r/m32
+F7 /4          |MUL r/m32
+F7 /5          |IMUL r/m32
+F7 /6          |DIV r/m32
+F7 /7          |IDIV r/m32
+FF /0          |INC r/m32
+FF /1          |DEC r/m32
+FF /2          |CALL r/m32
+FF /4          |JMP r/m32
+FF /6          |PUSH r/m32
+
+40+rd          |INC r32
+48+rd          |DEC r32
+50+rd          |PUSH r32
+58+rd          |POP r32
+90+rd          |XCHG EAX,r32
+0F C8+rd       |BSWAP r32
+
+B0+rb ib       |MOV r8,imm8
+B8+rd id       |MOV r32,imm32
+
+C8 iw ib       |ENTER imm16,imm8
+
+C2 iw          |RET imm16
+CA iw          |RETF imm16
+
+70 cb          |JO rel8
+71 cb          |JNO rel8
+72 cb          |JB rel8
+73 cb          |JAE rel8
+74 cb          |JE rel8
+75 cb          |JNE rel8
+76 cb          |JBE rel8
+77 cb          |JA rel8
+78 cb          |JS rel8
+79 cb          |JNS rel8
+7A cb          |JPE rel8
+7B cb          |JPO rel8
+7C cb          |JL rel8
+7D cb          |JGE rel8
+7E cb          |JLE rel8
+7F cb          |JG rel8
+E3 cb          |JECXZ rel8
+EB cb          |JMP rel8
+
+0F 80 cd       |JO rel32
+0F 81 cd       |JNO rel32
+0F 82 cd       |JB rel32
+0F 83 cd       |JAE rel32
+0F 84 cd       |JE rel32
+0F 85 cd       |JNE rel32
+0F 86 cd       |JBE rel32
+0F 87 cd       |JA rel32
+0F 88 cd       |JS rel32
+0F 89 cd       |JNS rel32
+0F 8A cd       |JPE rel32
+0F 8B cd       |JPO rel32
+0F 8C cd       |JL rel32
+0F 8D cd       |JGE rel32
+0F 8E cd       |JLE rel32
+0F 8F cd       |JG rel32
+E8 cd          |CALL rel32
+E9 cd          |JMP rel32
+
+60             |PUSHA
+61             |POPA
+6E             |OUTSB
+6F             |OUTS
+90             |NOP
+9C             |PUSHF
+9D             |POPF
+9E             |SAHF
+9F             |LAHF
+A4             |MOVSB
+A5             |MOVS
+AA             |STOSB
+AB             |STOS
+AE             |SCASB
+AF             |SCAS
+C3             |RET
+C9             |LEAVE
+CB             |RETF
+F0             |LOCK
+F5             |CMC
+F8             |CLC
+F9             |STC
+FA             |CLI
+FC             |CLD
+FD             |STD
+FB             |STI
+
+8D /r          |LEA r32,m32
+
+E0 cb          |LOOPNZ rel8
+E1 cb          |LOOPZ rel8
+E2 cb          |LOOP rel8
+
+0F BE /r       |MOVSX r32,r/m8
+0F BF /r       |MOVSX r32,r/m16
+
+0F B6 /r       |MOVZX r32,r/m8
+0F B7 /r       |MOVZX r32,r/m16
+
+6A ib          |PUSH imm8
+68 id          |PUSH imm32
+
+D0 /0          |ROL r/m8,1
+D0 /1          |ROR r/m8,1
+D0 /2          |RCL r/m8,1
+D0 /3          |RCR r/m8,1
+D0 /4          |SHL r/m8,1
+D0 /5          |SHR r/m8,1
+D0 /7          |SAR r/m8,1
+
+D1 /0          |ROL r/m32,1
+D1 /1          |ROR r/m32,1
+D1 /2          |RCL r/m32,1
+D1 /3          |RCR r/m32,1
+D1 /4          |SHL r/m32,1
+D1 /5          |SHR r/m32,1
+D1 /7          |SAR r/m32,1
+
+D2 /0          |ROL r/m8,CL
+D2 /1          |ROR r/m8,CL
+D2 /2          |RCL r/m8,CL
+D2 /3          |RCR r/m8,CL
+D2 /4          |SHL r/m8,CL
+D2 /5          |SHR r/m8,CL
+D2 /7          |SAR r/m8,CL
+
+D3 /0          |ROL r/m32,CL
+D3 /1          |ROR r/m32,CL
+D3 /2          |RCL r/m32,CL
+D3 /3          |RCR r/m32,CL
+D3 /4          |SHL r/m32,CL
+D3 /5          |SHR r/m32,CL
+D3 /7          |SAR r/m32,CL
+
+0F 90 /0       |SETO r/m8
+0F 91 /0       |SETNO r/m8
+0F 92 /0       |SETB r/m8
+0F 93 /0       |SETAE r/m8
+0F 94 /0       |SETE r/m8
+0F 95 /0       |SETNE r/m8
+0F 96 /0       |SETBE r/m8
+0F 97 /0       |SETA r/m8
+0F 98 /0       |SETS r/m8
+0F 99 /0       |SETNS r/m8
+0F 9A /0       |SETPE r/m8
+0F 9B /0       |SETPO r/m8
+0F 9C /0       |SETL r/m8
+0F 9D /0       |SETGE r/m8
+0F 9E /0       |SETLE r/m8
+0F 9F /0       |SETG r/m8
+
+0F A4 /r ib    |SHLD r/m32,r32,imm8
+0F AC /r ib    |SHRD r/m32,r32,imm8
+
+0F A5 /r       |SHLD r/m32,r32,CL
+0F AD /r       |SHRD r/m32,r32,CL
+
+6B /r ib       |IMUL r32,r/m32,imm8
+69 /r id       |IMUL r32,r/m32,imm32
+
+D7 /0          |XLAT m8
+

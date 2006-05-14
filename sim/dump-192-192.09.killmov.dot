@@ -1,0 +1,8 @@
+digraph foo {
+"c0" [label="mov r31, r32\lldr.b r4, [r1, r31]\lstr.b ~r4, [r0, r31]\ladd r32, ~r31, #1\lcmp.ltu r4, r32, r2\lldx #288\lldy #304\lcbr ~r4, 18_(opt), 19_(opt)\l" shape="box"]
+"d0" [label="ldr.w r31, [r63, #0]\ladd r4, r63, #4\lmov r63, r4\lmov r54, r31\lmov r3, r32\lret\l" shape="box"]
+"0" [label="mov r31, r3\lldx #288\ljump 18_(opt)\l" shape="box"]
+"c0" -> "c0" [color="red"]
+"c0" -> "d0" [color="red"]
+"0" -> "c0" [color="red"]
+}

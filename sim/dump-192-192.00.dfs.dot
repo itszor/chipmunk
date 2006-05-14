@@ -1,0 +1,11 @@
+digraph foo {
+"c0" [label="dfs: 0\l(move =r4 (byte (add r1 r3)))\l(move (byte (add r0 r3)) ~r4)\l(move =r3 (add ~r3 #1))\l(move =r4 (cmp/ltu r3 r2))\l== cbr(0.000000) ~r4,local#0,local#1 ==\l" shape="box"]
+"d0" [label="dfs: 1\l(move =r54 (word (add r63 #0)))\l(move =r63 (add r63 #4))\l== jump local#2 ==\l" shape="box"]
+"ffffffff" [label="dfs: 2\l(sync_regs)\l== ret ==\l" shape="box"]
+"c0" -> "c0" [color="magenta" label="0"]
+"d0" -> "c0" [color="magenta" label="0"]
+"ffffffff" -> "d0" [color="magenta" label="0"]
+"c0" -> "c0" [color="red"]
+"c0" -> "d0" [color="red"]
+"d0" -> "ffffffff" [color="red"]
+}

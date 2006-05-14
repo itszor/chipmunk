@@ -1,0 +1,6 @@
+*.cmi *.cmo *.cmx *.d
+dump*.dot
+rules.out
+stable.rules
+sim
+sim.opt
