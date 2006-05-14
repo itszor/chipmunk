@@ -1,0 +1,7 @@
+bset.o: bset.c defs.h bset.h cnew.h
+list.o: list.c cnew.h list.h defs.h
+hash.o: hash.c cnew.h hash.h defs.h list.h
+cnew.o: cnew.c cnew.h
+clist.o: clist.c cnew.h defs.h clist.h list.h
+pqueue.o: pqueue.c cnew.h pqueue.h defs.h
+map.o: map.c map.h defs.h cnew.h
