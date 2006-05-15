@@ -233,6 +233,7 @@ case $basic_machine in
 	| arc | arm | arm[bl]e | arme[lb] | armv[2345] | armv[345][lb] | avr \
 	| c4x | clipper \
 	| d10v | d30v | dlx | dsp16xx \
+	| dop \
 	| fr30 | frv \
 	| h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] | hppa64 \
 	| i370 | i860 | i960 | ia64 \
@@ -476,6 +477,10 @@ case $basic_machine in
 	delta88)
 		basic_machine=m88k-motorola
 		os=-sysv3
+		;;
+	dop*)
+		basic_machine=dop-unknown
+		os=-none
 		;;
 	dpx20 | dpx20-*)
 		basic_machine=rs6000-bull

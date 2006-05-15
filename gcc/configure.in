@@ -471,6 +471,9 @@ case "${target}" in
   d30v-*-*)
     noconfigdirs="$noconfigdirs ${libgcj} gdb"
     ;;
+  dop-*-*)
+    noconfigdirs="$noconfigdirs ${libgcj}"
+    ;;
   fr30-*-elf*)
     noconfigdirs="$noconfigdirs ${libgcj} gdb"
     ;;

@@ -105,6 +105,9 @@ case "${host_cpu}" in
   ep9312)
 	machine_dir=arm
 	;;
+  dop*)
+  	machine_dir=dop
+	;;
   fr30)
 	machine_dir=fr30
 	;;
@@ -319,6 +322,9 @@ case "${host}" in
   d30v*)
 	sys_dir=
 	;;
+  dop-*)
+  	sys_dir=dop
+	;;
   ep9312-*-*)
 	if [ "x${newlib_may_supply_syscalls}" = "xyes" ] ; then
 	  sys_dir=arm
@@ -520,6 +526,9 @@ case "${host}" in
 	if [ "x${newlib_may_supply_syscalls}" = "xyes" ] ; then
 	  newlib_cflags="${newlib_cflags} -DARM_RDI_MONITOR"
 	fi
+	;;
+  dop*)
+  	newlib_cflags="${newlib_cflags} -DREENTRANT_SYSCALLS_PROVIDED"
 	;;
   fr30-*-*)
 	syscall_dir=syscalls

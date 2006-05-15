@@ -1,6 +1,8 @@
 #ifndef __SYS_CONFIG_H__
 #define __SYS_CONFIG_H__
 
+#include <sys/param.h>
+
 #include <machine/ieeefp.h>  /* floating point macros */
 
 /* exceptions first */
