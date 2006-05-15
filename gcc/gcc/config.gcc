@@ -748,7 +748,7 @@ cris-*-linux*)
 d30v-*)
 	tm_file="dbxelf.h elfos.h svr4.h ${tm_file}"
 	;;
-dop-unknown-none)
+chipmunk-unknown-none)
 	;;
 dsp16xx-*)
 	use_fixproto=yes

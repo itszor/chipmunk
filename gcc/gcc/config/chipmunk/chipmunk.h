@@ -32,7 +32,7 @@ Boston, MA 02111-1307, USA.  */
 
 #define TARGET_CPU_CPP_BUILTINS() \
   do { \
-    builtin_define("__DOP__"); \
+    builtin_define("__CHIPMUNK__"); \
   } while (0)
 
 extern int target_flags;

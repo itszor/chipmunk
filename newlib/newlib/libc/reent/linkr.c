@@ -16,8 +16,7 @@
 
 #ifdef REENTRANT_SYSCALLS_PROVIDED
 
-/* This is also defined in signalr.c, and chlink complains.
-int _dummy_link_syscalls = 1; */
+int _dummy_link_syscalls = 1;
 
 #else
 
