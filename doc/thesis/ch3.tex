@@ -108,7 +108,7 @@ If the immediate form is used, the immediate is calculated from the mantissa $i$
 
 \decfmt
 \texttt{0000010.Npp...nnnnnn......dddddd} & \texttt{not rd,\nex{rn}}\\
-\texttt{0000111.ppbbiiiiiiii......dddddd} & \texttt{not rd,\#imm}
+\texttt{0000011.ppbbiiiiiiii......dddddd} & \texttt{not rd,\#imm}
 \finfmt
 
 Moves bitwise negation of \texttt{rn} or immediate into \texttt{rd}. If \texttt{N} is 1, \texttt{rn} is expired.
@@ -351,6 +351,19 @@ Extracts a bitfield of \texttt{rm}, from bit \texttt{b} to bit \texttt{e} inclus
 
 This instruction is intended mainly as an aid to the dynamic optimiser, to allow it to decode instructions more efficiently. It may be simpler to omit it from a hardware implementation of DOP.
 
+\subsection{SPL format instructions}
+
+\subsubsection{spl}
+
+\decfmt
+\texttt{1101000MNiiiiinnnnnnmmmmmmdddddd} & \texttt{spl rd,rm,rn,\#imm} \\
+\texttt{1101001MNiiiiinnnnnnmmmmmmdddddd} & \texttt{spl.s rd,rm,rn,\#imm}
+\finfmt
+
+Splice the first \texttt{i} bits of \texttt{rm} with the last $32-\texttt{i}$ bits of \texttt{rn}. If the \texttt{s} bit is true, \texttt{rn} is shifted left to position \texttt{i} before performing the merge.
+
+This instruction can be used to synthesize fairly efficient bitfield insert operations, or other operations such as endian-reversal for bytes in a 32-bit word.
+
 \subsection{SMEM and SMEMI format instructions}
 
 \subsubsection{ldr}
@@ -384,18 +397,20 @@ Store value \texttt{rd} to a memory location. The address is calculated as $\tex
 \subsubsection{ldm}
 
 \decfmt
-\texttt{011100B.....xxeeeeeessssssbbbbbb} & \texttt{ldm \nex{rb},@x\{rs-re\}}
+\texttt{011100KJIw1bbbkkkkkkjjjjjjiiiiii} & \texttt{ldm.u rb$[$*$]$,[ri$[$,rj$[$,rk$]]$]} \\
+\texttt{011100KJIw0bbbkkkkkkjjjjjjiiiiii} & \texttt{ldm.d rb$[$*$]$,[ri$[$,rj$[$,rk$]]$]}
 \finfmt
 
-Load a contiguous range of registers from sequential memory addresses. Registers are transferred in order. The first load (of \texttt{rs}) comes from \texttt{rb}, and subsequent loads come from higher or lower addresses depending on the sign of $\texttt{e}-\texttt{s}$, such that increasing register numbers are always loaded from increasing memory locations, and vice versa.
+Load a list of up to three arbitrary registers from sequential memory addresses, either increasing or decreasing. Write-back of the final address may be performed. The base register must be in the range \texttt{r56}-\texttt{r63} (this naturally includes the stack-pointer register).
 
 \subsubsection{stm}
 
 \decfmt
-\texttt{011101BR....xxeeeeeessssssbbbbbb} & \texttt{stm \nex{rb},@x\nex{\{rs-re\}}}
+\texttt{011101KJIw1bbbkkkkkkjjjjjjiiiiii} & \texttt{stm.u rb$[$*$]$,[ri$[$,rj$[$,rk$]]$]} \\
+\texttt{011101KJIw0bbbkkkkkkjjjjjjiiiiii} & \texttt{stm.d rb$[$*$]$,[ri$[$,rj$[$,rk$]]$]}
 \finfmt
 
-Store a contiguous range of registers to sequential memory addresses. Registers are transferred in order. The first store (of \texttt{rs}) goes to \texttt{rb}, and subsequent stores go to higher or lower addresses depending on the sign of $\texttt{e}-\texttt{s}$, such that increasing register numbers are always stored at increasing memory locations, and vice versa. If the \texttt{R} bit is 1, the entire range of registers is expired after the store.
+Store a list of up to three registers, ascending or descending. Base-register writeback may be used.
 
 \subsection{NOOP format instructions}
 

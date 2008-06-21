@@ -4,6 +4,20 @@ set -e
 
 PREFIX=$(readlink -f `pwd`/prefix)
 
+# Uncomment to enable distcc power
+WITH_DISTCC=`which distcc`
+#WITH_DISTCC=
+
+if [ -n "$WITH_DISTCC" ]; then
+  echo distcc located.
+  DISTCC=distcc
+  FASTER="-j 5"
+else
+  echo No distcc/distcc disabled.
+  DISTCC=
+  FASTER=
+fi
+
 echo Prefix is $PREFIX
 
 # build basic tools
@@ -38,9 +52,9 @@ maybe_mkdir gcc-build
 maybe_mkdir newlib-build
 
 pushd gcc-build
-../gcc/configure --target=chipmunk --prefix=$PREFIX --with-newlib \
+CC="$DISTCC gcc" ../gcc/configure --target=chipmunk --prefix=$PREFIX --with-newlib \
   --enable-languages=c --with-as=$PREFIX/bin/chipmunk-as \
-  --with-ld=$PREFIX/bin/chipmunk-ld && make && make install
+  --with-ld=$PREFIX/bin/chipmunk-ld && make $FASTER && make install
 popd
 
 pushd newlib-build
