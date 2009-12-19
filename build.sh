@@ -5,8 +5,8 @@ set -e
 PREFIX=$(readlink -f `pwd`/prefix)
 
 # Uncomment to enable distcc power
-WITH_DISTCC=`which distcc`
-#WITH_DISTCC=
+#WITH_DISTCC=`which distcc`
+WITH_DISTCC=
 
 if [ -n "$WITH_DISTCC" ]; then
   echo distcc located.
